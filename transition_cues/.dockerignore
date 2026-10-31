@@ -1,0 +1,5 @@
+.git
+transition-cues-data
+__pycache__
+tests
+*.zip

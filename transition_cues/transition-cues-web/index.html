@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f5ef"><meta name="description" content="A calm, familiar picture of where we are going and how we will get there.">
+<title>Transition Cues</title><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<div id="app"><p class="loading" role="status">Opening Transition Cues…</p></div>
+<dialog id="pinDialog" aria-labelledby="pinTitle">
+<form id="pinForm"><span class="eyebrow">PARENTS ONLY</span><h2 id="pinTitle">Enter your PIN</h2><p id="pinHelp">Enter your parent PIN to continue.</p>
+<label for="pinInput">Parent PIN</label><input id="pinInput" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="off" required>
+<div id="confirmGroup" hidden><label for="pinConfirm">Confirm PIN</label><input id="pinConfirm" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+<p id="pinError" class="error" role="alert"></p><div class="dialog-actions"><button id="pinCancel" type="button" class="secondary">Cancel</button><button type="submit" class="primary" id="pinSubmit">Unlock</button></div></form>
+</dialog>
+<dialog id="deleteDialog" aria-labelledby="deleteTitle"><form id="deleteForm"><span class="eyebrow">PICTURE LIBRARY</span><h2 id="deleteTitle">Remove this picture?</h2><p id="deleteText"></p><div class="dialog-actions"><button type="button" class="secondary" id="deleteCancel">Keep picture</button><button type="submit" class="danger">Remove</button></div></form></dialog>
+<dialog id="cropDialog" aria-labelledby="cropTitle">
+<form id="cropForm"><span class="eyebrow">PICTURE EDITOR</span><h2 id="cropTitle">Crop photo</h2><p id="cropHelp">Drag the picture or use the sliders to frame it. Changes are saved only when you choose Use crop.</p>
+<div class="crop-preview"><canvas id="cropCanvas" width="560" height="420" aria-label="Crop preview; drag to reposition the image"></canvas></div>
+<label for="cropAspect">Shape</label><select id="cropAspect"><option value="original">Original proportions</option><option value="1">Square</option><option value="1.3333333333">Landscape · 4:3</option><option value="0.75">Portrait · 3:4</option></select>
+<label for="cropZoom">Zoom</label><input id="cropZoom" type="range" min="1" max="4" step="0.01" value="1">
+<label for="cropX">Horizontal position</label><input id="cropX" type="range" min="0" max="100" step="0.1" value="50">
+<label for="cropY">Vertical position</label><input id="cropY" type="range" min="0" max="100" step="0.1" value="50">
+<p id="cropError" class="error" role="alert"></p><div class="dialog-actions"><button id="cropReset" type="button" class="secondary">Reset</button><button id="cropCancel" type="button" class="secondary">Cancel</button><button id="cropSave" type="submit" class="primary">Use crop</button></div>
+</form></dialog>
+<div id="toast" role="status" hidden></div>
+</body></html>

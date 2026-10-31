@@ -1,0 +1,20 @@
+name: Transition Cues
+version: "1.0.0"
+slug: transition_cues
+description: Familiar place, transport and bring-along pictures for a calm transition.
+url: https://github.com/Benjamin-Leo-Code/transition-cues-app
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: Tablet and phone web interface
+webui: http://[HOST]:[PORT:8099]
+watchdog: http://[HOST]:[PORT:8099]/api/state
+backup: cold
+options: {}
+schema: {}
