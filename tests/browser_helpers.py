@@ -24,3 +24,12 @@ def leave_fullscreen(page):
         await new Promise(requestAnimationFrame);
     }''')
     assert page.evaluate('() => !document.fullscreenElement'), 'Browser did not leave fullscreen'
+
+
+def type_pin(page, selector, digits):
+    # Unlike fill() on a text input, keyboard typing does not wait for a hidden
+    # custom control to become ready. Click the visible entry before typing.
+    field = page.locator(selector)
+    field.click()
+    page.keyboard.press('Delete')
+    page.keyboard.type(digits)

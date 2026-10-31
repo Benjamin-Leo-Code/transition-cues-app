@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen
+from browser_helpers import track_fullscreen, leave_fullscreen, type_pin
 
 
 def run():
@@ -30,8 +30,8 @@ def run():
                 url = f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
                 expect(page.locator('#pinDialog')).to_be_visible()
-                page.locator('#pinInput').press_sequentially('1234')
-                page.locator('#pinConfirm').press_sequentially('1234')
+                type_pin(page, '#pinInput', '1234')
+                type_pin(page, '#pinConfirm', '1234')
                 page.locator('#pinSubmit').click()
                 expect(page.locator('#pinDialog')).not_to_be_visible()
                 expect(page.locator('#start')).to_be_disabled()
@@ -40,7 +40,7 @@ def run():
                 mobile = phone.new_page()
                 mobile.on('pageerror', lambda error: errors.append(str(error)))
                 mobile.goto(url + '/#manage')
-                mobile.locator('#pinInput').press_sequentially('1234')
+                type_pin(mobile, '#pinInput', '1234')
                 mobile.locator('#pinSubmit').click()
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Test images are generated within the browser, never shipped in the real library.
@@ -65,7 +65,7 @@ def run():
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 expect(page.locator('.bring-items')).to_have_count(0)
                 for _ in range(5): page.locator('#lockedSurface h1').click()
-                page.locator('#pinInput').press_sequentially('1234')
+                type_pin(page, '#pinInput', '1234')
                 page.locator('#pinSubmit').click()
                 expect(page.locator('#start')).to_be_visible()
                 page.get_by_role('button', name='Park').click()
@@ -126,11 +126,11 @@ def run():
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 assert page.locator('.cue-card img').first.evaluate('(img)=>img.complete && img.naturalWidth>0')
                 for _ in range(5): page.locator('#lockedSurface h1').click()
-                page.locator('#pinInput').press_sequentially('0000')
+                type_pin(page, '#pinInput', '0000')
                 page.locator('#pinSubmit').click()
                 expect(page.locator('#pinError')).to_contain_text('not recognised')
                 expect(page.locator('#lockedSurface')).to_be_visible()
-                page.locator('#pinInput').press_sequentially('1234')
+                type_pin(page, '#pinInput', '1234')
                 page.locator('#pinSubmit').click()
                 expect(page.locator('#start')).to_be_visible()
                 expect(page.locator('#lockedSurface')).to_have_count(0)
@@ -140,9 +140,9 @@ def run():
                 mobile.locator('#returnUrl').fill('http://homeassistant.local:8123/lovelace/0')
                 mobile.get_by_role('button', name='Save link').click()
                 expect(mobile.get_by_role('link', name='Back to main screen', exact=False)).to_be_visible()
-                mobile.locator('#oldPin').press_sequentially('1234')
-                mobile.locator('#newPin').press_sequentially('5678')
-                mobile.locator('#newPinConfirm').press_sequentially('5678')
+                type_pin(mobile, '#oldPin', '1234')
+                type_pin(mobile, '#newPin', '5678')
+                type_pin(mobile, '#newPinConfirm', '5678')
                 mobile.get_by_role('button', name='Change PIN').click()
                 expect(mobile.locator('#toast')).to_contain_text('PIN changed')
                 assert not errors, errors
