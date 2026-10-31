@@ -21,3 +21,13 @@
 #cropBackground{padding:4px;max-width:120px;cursor:pointer}
 @media(max-width:620px){.locked .bring-card img{width:min(100%,10vh)}}
 .picture.person-picture img{width:min(100%,150px);height:auto;aspect-ratio:1}.library-item.person-picture img{width:min(100%,130px);height:auto;aspect-ratio:1}.preview-image.round{width:min(100%,150px);height:auto;aspect-ratio:1}@media(max-width:620px){.picture.person-picture img{width:min(100%,120px)}}
+
+/* Compact parent navigation and a clear route back to the plan. */
+.header{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px}.header .nav{width:auto;margin-left:auto;justify-content:flex-end;align-items:center;flex-wrap:nowrap;gap:8px}.header .icon-link{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border-radius:12px;font-size:27px;line-height:1}.icon-link svg{width:24px;height:24px}.header .back-plan{padding:10px 14px;white-space:nowrap;border-radius:10px}.header>.return-link{flex-basis:100%;text-align:right;font-size:13px;padding-bottom:12px;text-decoration:none}.subpage-header{justify-content:flex-end}
+/* Edge-to-edge journey photos and matching companion icon sizes. */
+.locked{--companion-size:clamp(64px,10vh,100px);--companion-card:clamp(76px,12vh,120px);--photo-shadow:0 5px 16px #253d351f}
+.locked .cue-card img{border:0;object-fit:cover;box-shadow:var(--photo-shadow)}.locked .person-card img{border:0;box-shadow:var(--photo-shadow)}
+.locked .bring-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;max-width:none}.locked .bring-card{width:var(--companion-card)}.locked .bring-card img{width:var(--companion-size);height:var(--companion-size);border:0;border-radius:14px;object-fit:cover;padding:0;box-shadow:var(--photo-shadow)}
+@media(max-width:620px){.header .brand{font-size:17px;gap:8px}.header .brand img{width:36px;height:36px}.locked{--companion-size:64px;--companion-card:80px}.locked .bring-grid{gap:10px}}
+
+.locked .bring-card figcaption{font-size:clamp(14px,2vh,20px);line-height:1.2}

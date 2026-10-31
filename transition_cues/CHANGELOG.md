@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6
+
+- Simplify the logo and page headings; use accessible icon links for Library and Settings at the top right, with Back to plan on parent pages.
+- Show journey photos edge to edge with soft shadows and no borders.
+- Size rounded-square bring-along photos to match the circular People portraits.
+
 ## 1.0.5
 
 - Use square crops and square photo frames throughout; keep People circular.

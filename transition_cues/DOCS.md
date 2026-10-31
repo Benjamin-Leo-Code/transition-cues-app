@@ -26,6 +26,8 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
+Use the picture icon at the top right for **Picture library**, and the gear icon for **Settings**. Both have accessible labels and tooltips. On those pages, use **← Back to plan** at the top right to return to journey selection.
+
 Set a shared parent PIN of 4–8 digits on first launch using the on-screen number pad. Tap **Next**, enter the same digits to confirm, then save. There is no default PIN. Use this PIN on your phone when opening the library or settings.
 
 The PIN controls use buttons and masked dots instead of password fields, so Safari has no editable PIN field to offer a generated password for or open its keyboard against. Use **Clear** to start over or **⌫** to delete the last digit. A physical keyboard also works: type numbers, use Backspace to delete a digit, Delete to clear, and Enter on the selected PIN field to continue. PINs can start with zero and may contain up to eight digits.
