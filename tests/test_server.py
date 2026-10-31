@@ -53,6 +53,24 @@ class AppTests(unittest.TestCase):
         self.add()
         self.assertEqual(Store(self.directory.name).public()['places'][0]['name'], 'Park')
 
+    def test_install_manifest_and_apple_icons_are_served(self):
+        import struct
+        from urllib.parse import urlsplit
+        connection = http.client.HTTPConnection('127.0.0.1', self.server.server_port)
+        connection.request('GET', '/manifest.webmanifest')
+        response = connection.getresponse()
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.getheader('Content-Type'), 'application/manifest+json')
+        manifest = json.loads(response.read())
+        connection.close()
+        self.assertEqual(self.request(urlsplit(manifest['start_url']).path)[0], 200)
+        self.assertEqual(manifest['display'], 'standalone')
+        for icon in manifest['icons'] + [{'src':'/apple-touch-icon.png','sizes':'180x180'}]:
+            status, content, _ = self.request(icon['src'])
+            self.assertEqual(status, 200, icon['src'])
+            self.assertTrue(content.startswith(b'\x89PNG\r\n\x1a\n'))
+            self.assertEqual(struct.unpack('>II', content[16:24]), tuple(map(int, icon['sizes'].split('x'))))
+
     def test_upload_read_delete_and_persistence(self):
         item = self.add()
         self.add('transport', 'Bus')

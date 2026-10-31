@@ -16,6 +16,18 @@ No folders or files need creating. No Home Assistant or GitHub access token is r
 
 The default exposed port is 8099. If it is already used, change the host port in the add-on's Network settings and use that port in tablet/phone addresses. Open Web UI follows the configured port. If hostname discovery fails, use the Home Assistant machine's LAN IP address.
 
+## Add to your Home Screen or Dock
+
+The app includes Apple touch icons and a web app manifest with regular and maskable PNG icons, all using the green Transition Cues arrow logo.
+
+- **iPhone/iPad:** open the app’s address in Safari, choose **Share → Add to Home Screen**, and enable **Open as Web App** if that option appears.
+- **Mac:** open the address in Safari, then choose **File → Add to Dock** (macOS Sonoma or later). See [Apple’s instructions](https://support.apple.com/104996).
+- **Other devices:** use your browser’s **Install app** or **Add to Home Screen** option. Availability varies. Chromium’s full PWA install experience requires HTTPS, except for localhost/loopback development; a plain `http://homeassistant.local:8099` address may only offer a shortcut. See [browser installation requirements](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable). This update does not configure HTTPS or a reverse proxy for you.
+
+Reload the app after updating before adding it. An existing shortcut or Dock app may retain its old icon; remove that shortcut and add it again if necessary. Do not uninstall the Home Assistant add-on to refresh an icon. Photos and shared settings stay on the server. A newly created standalone app can have separate browser storage for the saved journey and splash preference. The Home Assistant server must remain reachable; this update adds install metadata and icons, not offline hosting.
+
+The custom repository also includes Home Assistant’s `icon.png` and `logo.png` assets for its app store/list and detail page, following [Home Assistant’s artwork format](https://contributors.home-assistant.io/apps/guides/presentation/). After updating, refresh the app store/repository and reload Home Assistant if cached artwork remains. Actual Home Screen/Dock artwork and Home Assistant’s interface need checking on your devices; automated checks validate the manifest and served image files.
+
 ## Moving from another repository
 
 This is a fresh repository with an initial version of **1.0.0**, containing the current app features. It is not an in-place update or downgrade of an add-on installed from another repository. Home Assistant gives installations from different repository URLs separate identities and private data folders.

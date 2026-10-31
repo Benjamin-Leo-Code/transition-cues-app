@@ -44,3 +44,5 @@ Automated checks cover server behavior, repository metadata and both image archi
 ## Repository hygiene
 
 This repository starts from a reviewed source snapshot with independent Git history. Do not import commit history from another repository when bringing in changes. Keep uploaded pictures, runtime data and credentials outside Git; review example content and screenshots for personal information before publication.
+
+Icon assets are committed build inputs. To regenerate them from `transition_cues/transition-cues-web/icon.svg`, install Playwright/Chromium and run `python3 scripts/render_icons.py` (set `CHROMIUM_PATH` for a system Chromium). This produces Apple, manifest, favicon and Home Assistant artwork without changing the logo. No rendering dependency is added to the add-on.

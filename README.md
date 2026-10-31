@@ -28,6 +28,10 @@ On a phone, open the same server address and choose **Picture library** to uploa
 
 After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
 
+## Home Screen and Dock icons
+
+Use **Share → Add to Home Screen** in Safari on iPhone/iPad, or **File → Add to Dock** on Mac. Other browsers can use the supplied web app manifest and icons; full PWA installation generally needs HTTPS. See [installation and icon refresh instructions](transition_cues/DOCS.md#add-to-your-home-screen-or-dock). The same logo is included for Home Assistant’s app listing.
+
 ## Moving from another installation
 
 This repository starts at **v1.0.0** with the full current feature set and fresh Git history. Home Assistant treats an add-on from a different repository as a separate installation. Back up the old add-on and keep its data before removing anything; data is not copied automatically. Stop an old installation using port 8099 before starting this one, or choose a different host port. See the setup guide for details.

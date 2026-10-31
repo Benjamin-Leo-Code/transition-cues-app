@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9
+
+- Add Apple home-screen metadata, a web app manifest, and high-resolution regular and maskable icons using the Transition Cues logo.
+- Add Home Assistant app icon and logo artwork.
+- Document Home Screen/Dock installation, HTTPS requirements on other browsers, and refreshing existing shortcuts.
+
 ## 1.0.8
 
 - Remove Places and Transport totals from the journey picker.
