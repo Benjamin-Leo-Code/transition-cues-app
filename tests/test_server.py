@@ -155,6 +155,46 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.request('/api/state')[1]['people'], [uploaded])
         self.assertEqual(self.request(second['image'])[0], 200)
 
+    def test_rename_validation_stale_edits_and_persistence(self):
+        item = self.add()
+        body = {'kind':'places', 'id':item['id'], 'sourceName':'Park', 'name':'  The park  '}
+        for name in ['', '   ', 'x'*61, None]:
+            self.assertEqual(self.request('/api/rename', body | {'name':name})[0], 400)
+        self.assertEqual(self.request('/api/rename', body | {'kind':'unknown'})[0], 400)
+        status, renamed, _ = self.request('/api/rename', body)
+        self.assertEqual(status, 200)
+        self.assertEqual(renamed, item | {'name':'The park'})
+        self.assertEqual(Store(self.directory.name).public()['places'], [renamed])
+        self.assertEqual(self.request('/api/rename', body | {'name':'Old edit'})[0], 400)
+        self.assertEqual(self.request('/api/rename', body | {'id':'missing'})[0], 400)
+        self.assertEqual(self.request(item['image'])[0], 200)
+
+    def test_transfer_preserves_identity_and_images_in_every_category(self):
+        item = self.add()
+        kind = 'places'
+        for target in ['transport', 'items', 'people', 'places']:
+            body = {'kind':kind, 'id':item['id'], 'targetKind':target}
+            for invalid in [kind, 'unknown', None]:
+                self.assertEqual(self.request('/api/transfer', body | {'targetKind':invalid})[0], 400)
+            status, moved, _ = self.request('/api/transfer', body)
+            self.assertEqual(status, 200)
+            self.assertEqual(moved, item)
+            self.assertEqual(self.request('/api/transfer', body)[0], 400)
+            saved = Store(self.directory.name).public()
+            self.assertEqual(saved[target], [item])
+            self.assertEqual(saved[kind], [])
+            self.assertEqual(self.request(item['image'])[0], 200)
+            kind = target
+
+    def test_concurrent_transfers_move_a_picture_only_once(self):
+        item = self.add()
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda target: self.request('/api/transfer', {'kind':'places', 'id':item['id'], 'targetKind':target})[0], ['items','people']))
+        self.assertEqual(sorted(results), [200, 400])
+        saved = Store(self.directory.name).public()
+        self.assertEqual(saved['places'], [])
+        self.assertEqual(len(saved['items']) + len(saved['people']), 1)
+
     def test_older_library_without_people_and_crop_original(self):
         item = self.add()
         path = Path(self.directory.name) / 'library.json'

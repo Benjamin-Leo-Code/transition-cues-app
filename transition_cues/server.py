@@ -154,6 +154,29 @@ class Handler(BaseHTTPRequestHandler):
             store.save()
             # Existing locked journeys keep their old immutable image URLs.
             self.reply(200, item)
+        elif path in ('/api/rename', '/api/transfer'):
+            kind = body.get('kind')
+            if kind not in ('places', 'transport', 'items', 'people'):
+                raise ValueError('Unknown category.')
+            item = next((x for x in store.data[kind] if x['id'] == body.get('id')), None)
+            if not item:
+                raise ValueError('This picture was removed or moved. Refresh the library.')
+            if path == '/api/rename':
+                name = body.get('name', '')
+                if not isinstance(name, str) or not 1 <= len(name.strip()) <= 60:
+                    raise ValueError('Choose a name of 1 to 60 characters.')
+                if body.get('sourceName') != item['name']:
+                    raise ValueError('This name changed on another device. Refresh the library.')
+                item['name'] = name.strip()
+            else:
+                target = body.get('targetKind')
+                if target not in ('places', 'transport', 'items', 'people') or target == kind:
+                    raise ValueError('Choose a different category.')
+                store.data[kind].remove(item)
+                store.data[target].append(item)
+            store.save()
+            # Names, categories and immutable image URLs in saved journeys are unchanged.
+            self.reply(200, item)
         elif path == '/api/delete':
             kind = body.get('kind')
             if kind not in ('places', 'transport', 'items', 'people'):

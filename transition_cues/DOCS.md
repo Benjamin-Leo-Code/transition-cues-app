@@ -44,6 +44,12 @@ No PIN or first-launch setup is required. Open the picture library to add your p
 
 In **Picture library**, choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon, enter a name, choose a photo and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
+## Manage existing pictures
+
+Each library picture has four icon buttons with accessible names and tooltips: **Crop**, **Rename** (pencil), **Change category** (transfer arrows), and **Remove** (red bin). Remove still asks for confirmation.
+
+Rename opens the current name for editing; save a non-empty name of up to 60 characters. Change category opens Place, Transport, Items and People icons; choose a different category, then **Move picture**. The library switches to the destination category after moving. The item keeps its identity, photo and retained original. Pictures moved to People display as circles; use Crop if the framing needs adjusting. Cancel closes either dialog without changes. Names and pictures in plans already on screen remain unchanged, including after reload.
+
 ## Crop photos
 
 All new photos automatically fill a centred square crop, shown in the upload preview. Photo frames are square in the picker, library and locked display. People keep their circular appearance, using a square saved image. Existing photos are shown within square frames; their saved files and locked snapshots are not rewritten automatically.

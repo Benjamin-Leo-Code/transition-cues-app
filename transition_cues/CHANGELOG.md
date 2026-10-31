@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.11
+
+- Replace library crop/remove text with accessible icon buttons; show deletion in red.
+- Add rename and change-category icons and dialogs. Moving a picture preserves its identity, photo and original.
+- Keep names, photos and categories in already displayed journeys unchanged.
+
 ## 1.0.10
 
 - Use Add a picture and its short-photo guidance as the library page heading, removing duplicate text from the upload box.

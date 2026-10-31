@@ -187,6 +187,33 @@ def run(engine):
                 size=mobile.evaluate('''async src=>{const i=new Image();i.src=src;await i.decode();return [i.width,i.height]}''',restored['image'])
                 assert size==[400,400],size
                 mobile.screenshot(path='/tmp/transition-cues-phone.png',full_page=True)
+                # Rename and transfer actions preserve images and existing locked snapshots.
+                second=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.people.find(i=>i.name==='Person B')}")
+                mobile.get_by_role('button',name='Rename Person B',exact=True).click()
+                expect(mobile.locator('#editName')).to_have_value('Person B')
+                mobile.locator('#editName').fill('   ');expect(mobile.locator('#editSave')).to_be_disabled()
+                mobile.locator('#editCancel').click()
+                expect(mobile.locator('.library-item strong',has_text='Person B')).to_be_visible()
+                mobile.get_by_role('button',name='Rename Person B',exact=True).click()
+                mobile.locator('#editName').fill('Companion B');mobile.locator('#editSave').click()
+                expect(mobile.locator('#editDialog')).not_to_be_visible()
+                expect(mobile.locator('.library-item strong',has_text='Companion B')).to_be_visible()
+                mobile.get_by_role('button',name='Change category for Companion B',exact=True).click()
+                expect(mobile.locator('#editSave')).to_be_disabled()
+                mobile.locator('#editDialog').get_by_role('radio',name='Items',exact=True).check()
+                mobile.locator('#editCancel').click()
+                expect(mobile.locator('.library-item strong',has_text='Companion B')).to_be_visible()
+                mobile.get_by_role('button',name='Change category for Companion B',exact=True).click()
+                mobile.locator('#editDialog').get_by_role('radio',name='Items',exact=True).check()
+                mobile.locator('#editSave').click();expect(mobile.locator('#editDialog')).not_to_be_visible()
+                expect(mobile.locator('[data-tab="items"]')).to_have_attribute('aria-pressed','true')
+                expect(mobile.get_by_role('button',name='Crop Companion B',exact=True)).to_be_visible()
+                moved=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.items.find(i=>i.id==='"+second['id']+"')}")
+                assert moved==dict(second,name='Companion B')
+                page.reload();expect(page.locator('.person-card')).to_have_count(2)
+                expect(page.locator('.person-card figcaption').last).to_have_text('Person B')
+                assert page.locator('.person-card img').last.get_attribute('src')==second['image']
+                mobile.locator('[data-tab="people"]').click()
                 # Removing a person doesn't change the locked snapshot.
                 mobile.get_by_role('button',name='Remove Person A',exact=True).click();mobile.get_by_role('button',name='Remove',exact=True).click()
                 expect(mobile.locator('#deleteDialog')).not_to_be_visible()
@@ -197,7 +224,7 @@ def run(engine):
                 page.reload();expect(page.locator('#lockedSurface')).to_be_visible();expect(page.locator('.journey-people')).to_have_count(0)
                 assert not errors,errors
                 browser.close()
-                print('PASS: footer removal, optional people, circles, responsive layout, square frames, fill and fit, coloured bars, transparency preservation, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, tap exit and legacy journey restore.')
+                print('PASS: footer removal, optional people, circles, responsive layout, square frames, fill and fit, coloured bars, transparency preservation, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, rename, transfer, cancellations, tap exit and legacy journey restore.')
         finally:
             server.shutdown();server.server_close();thread.join()
 
