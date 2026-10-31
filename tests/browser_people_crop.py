@@ -8,6 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
+from browser_helpers import track_fullscreen, leave_fullscreen
 
 
 def run():
@@ -20,7 +21,7 @@ def run():
                 if os.environ.get('CHROMIUM_PATH'):options['executable_path']=os.environ['CHROMIUM_PATH']
                 browser=p.chromium.launch(**options)
                 tablet=browser.new_context(viewport={'width':1280,'height':900})
-                page=tablet.new_page();errors=[]
+                page=tablet.new_page();track_fullscreen(page);errors=[]
                 page.on('pageerror',lambda e:errors.append(str(e)))
                 url=f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
@@ -83,8 +84,7 @@ def run():
                 assert page.locator('.person-card img').first.evaluate("img=>getComputedStyle(img).borderRadius==='50%'")
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
                 # Exit browser fullscreen only; the application's PIN lock must remain active.
-                page.evaluate("async()=>{if(document.fullscreenElement) await document.exitFullscreen()}")
-                page.wait_for_function("() => !document.fullscreenElement")
+                leave_fullscreen(page)
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
