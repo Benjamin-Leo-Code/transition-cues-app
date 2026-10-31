@@ -155,6 +155,32 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.request('/api/state')[1]['people'], [uploaded])
         self.assertEqual(self.request(second['image'])[0], 200)
 
+    def test_reorder_persists_each_category_and_rejects_stale_or_boundary_moves(self):
+        for kind in ['places', 'transport', 'items', 'people']:
+            first = self.add(kind, 'First')
+            second = self.add(kind, 'Second')
+            third = self.add(kind, 'Third')
+            body = {'kind':kind, 'id':second['id'], 'direction':'left', 'neighbourId':first['id']}
+            self.assertEqual(self.request('/api/reorder', body)[0], 200)
+            self.assertEqual(Store(self.directory.name).public()[kind], [second, first, third])
+            self.assertEqual(self.request('/api/reorder', body)[0], 400)  # Already at the left edge.
+            self.assertEqual(self.request('/api/reorder', body | {'id':first['id'], 'direction':'right'})[0], 400)  # Stale neighbour.
+            self.assertEqual(self.request('/api/reorder', body | {'direction':'down'})[0], 400)
+            self.assertEqual(self.request('/api/reorder', body | {'kind':'unknown'})[0], 400)
+            self.assertEqual(self.request('/api/reorder', body | {'id':'missing'})[0], 400)
+            self.assertEqual(self.request('/api/reorder', body | {'direction':'right', 'neighbourId':first['id']})[0], 200)
+            self.assertEqual(Store(self.directory.name).public()[kind], [first, second, third])
+            self.assertEqual(self.request(first['image'])[0], 200)
+
+    def test_concurrent_reorders_reject_a_conflicting_stale_move(self):
+        entries = [self.add(name=name) for name in ['First','Second','Third']]
+        def move(direction):
+            return self.request('/api/reorder', {'kind':'places','id':entries[1]['id'],'direction':direction,'neighbourId':entries[0 if direction=='left' else 2]['id']})[0]
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(move, ['left','right']))
+        self.assertEqual(sorted(results), [200, 400])
+        self.assertEqual(len(Store(self.directory.name).public()['places']), 3)
+
     def test_rename_validation_stale_edits_and_persistence(self):
         item = self.add()
         body = {'kind':'places', 'id':item['id'], 'sourceName':'Park', 'name':'  The park  '}

@@ -28,11 +28,25 @@ def run(engine):
                 page.get_by_role('link',name='Settings',exact=True).click()
                 expect(page.locator('#returnUrl')).to_be_visible()
                 page.get_by_role('link',name='Back to plan',exact=False).click()
-                expect(page.locator('#start')).to_be_visible()
+                expect(page.locator('#start')).not_to_be_visible()
                 names=[['places','An especially long destination name across several lines'],['transport','Bus'],['people','A person with a much longer name'],['people','Person B'],['items','Headphones with a very long name'],['items','Drink']]
                 page.evaluate("""async names=>{for(const [kind,name] of names){const canvas=document.createElement('canvas');canvas.width=canvas.height=400;const ctx=canvas.getContext('2d');ctx.fillStyle={places:'#9caf88',transport:'#ddbd86',people:'#c5b5d3',items:'#a8c5d6'}[kind];ctx.fillRect(0,0,400,400);const image=canvas.toDataURL('image/png').split(',')[1];const r=await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})});if(!r.ok)throw Error('Fixture upload failed')}}""",names)
                 page.reload()
-                for _,name in names:page.get_by_role('button',name=name,exact=True).click()
+                expect(page.locator('#start')).not_to_be_visible()
+                expect(page.get_by_role('button',name='Bus',exact=True)).to_be_disabled()
+                expect(page.get_by_role('button',name='Drink',exact=True)).to_be_disabled()
+                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_disabled()
+                page.get_by_role('button',name=names[0][1],exact=True).click()
+                expect(page.locator('#start')).to_be_visible();expect(page.locator('#start')).to_be_disabled()
+                expect(page.get_by_role('button',name='Drink',exact=True)).to_be_disabled()
+                page.get_by_role('button',name='Bus',exact=True).click()
+                expect(page.locator('#start')).to_be_enabled()
+                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_disabled()
+                page.locator('#skipItems').click()
+                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_enabled()
+                for kind in ['items','people']:
+                    for item_kind,name in names:
+                        if kind==item_kind:page.get_by_role('button',name=name,exact=True).click()
                 show_plan(page);leave_fullscreen(page)
                 def assert_aligned():
                     photos=page.locator('.cue-card img').all()
@@ -69,10 +83,10 @@ def run(engine):
                 for _ in range(4):page.locator('.journey-content>h1').click()
                 expect(page.locator('#start')).to_be_visible()
                 assert page.evaluate("localStorage.getItem('tc-locked-journey')") is None
-                page.reload();expect(page.locator('#start')).to_be_visible()
+                page.reload();expect(page.locator('#start')).not_to_be_visible()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): no PIN setup, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+                print(f'PASS ({engine}): sequential sections, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

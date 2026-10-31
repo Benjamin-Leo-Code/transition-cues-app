@@ -154,6 +154,22 @@ class Handler(BaseHTTPRequestHandler):
             store.save()
             # Existing locked journeys keep their old immutable image URLs.
             self.reply(200, item)
+        elif path == '/api/reorder':
+            kind, direction = body.get('kind'), body.get('direction')
+            if kind not in ('places', 'transport', 'items', 'people') or direction not in ('left', 'right'):
+                raise ValueError('Choose a category and a left or right direction.')
+            entries = store.data[kind]
+            index = next((i for i, entry in enumerate(entries) if entry['id'] == body.get('id')), None)
+            if index is None:
+                raise ValueError('This picture was removed or moved. Refresh the library.')
+            target = index + (-1 if direction == 'left' else 1)
+            if not 0 <= target < len(entries):
+                raise ValueError('This picture is already at the edge of its category.')
+            if entries[target]['id'] != body.get('neighbourId'):
+                raise ValueError('The order changed on another device. Refresh the library.')
+            entries[index], entries[target] = entries[target], entries[index]
+            store.save()
+            self.reply(200, {'ok': True})
         elif path in ('/api/rename', '/api/transfer'):
             kind = body.get('kind')
             if kind not in ('places', 'transport', 'items', 'people'):

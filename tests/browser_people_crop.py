@@ -115,6 +115,15 @@ def run(engine):
                 mobile.locator('#cropCancel').click()
                 for name in ['Drink','Coat','Toy','Headphones']:upload('items',name)
                 upload('people','Person A');upload('people','Person B')
+                # Ordering persists, appears in the picker and respects category edges.
+                expect(mobile.get_by_role('button',name='Move Person A left',exact=True)).to_be_disabled()
+                expect(mobile.get_by_role('button',name='Move Person B right',exact=True)).to_be_disabled()
+                mobile.get_by_role('button',name='Move Person B left',exact=True).click()
+                expect(mobile.locator('.library-item strong').first).to_have_text('Person B')
+                page.reload()
+                assert page.locator('[data-kind="people"] .name').all_text_contents()==['Person B','Person A']
+                mobile.get_by_role('button',name='Move Person B right',exact=True).click()
+                expect(mobile.locator('.library-item strong').first).to_have_text('Person A')
                 # A cancelled edit makes no API write and doesn't change the stored URL.
                 get_person=lambda:mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.people[0]}")
                 person=get_person(); old_image=person['image']

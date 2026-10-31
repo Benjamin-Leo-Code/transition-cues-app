@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.13
+
+- Add saved left/right ordering controls to every library category, reflected in the journey picker.
+- Make Show the plan smaller and reveal it after a place is selected; transport is still required to start.
+- Enable numbered sections in sequence, with No items to bring to skip the optional Items step before choosing People.
+
 ## 1.0.12
 
 - Reorder the upload form: choose a photo first, enter its name second, then choose its category.

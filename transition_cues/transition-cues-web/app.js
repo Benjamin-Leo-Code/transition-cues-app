@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
-let toastTimer, pendingJourney = null, pendingEdit = null;
+let toastTimer, pendingJourney = null, pendingEdit = null, itemsReviewed = false, reorderBusy = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
   let response;
@@ -37,19 +37,24 @@ function renderChoose() {
   for (const k of ['places','transport']) if (selected[k]) selected[k] = state[k].find(x=>x.id===selected[k].id) || null;
   selected.items = selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
   selected.people = selected.people.map(person=>state.people.find(x=>x.id===person.id)).filter(Boolean);
+  if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];itemsReviewed=false;}
+  if(!selected.transport){selected.items=[];selected.people=[];itemsReviewed=false;}
+  const stepReady={places:true,transport:!!selected.places,items:!!(selected.places&&selected.transport),people:!!(selected.places&&selected.transport&&(itemsReviewed||selected.items.length||!state.items.length))};
   frame(intro('Where are we going?', 'Choose a place, how you’ll get there, and anything to bring along.', '<span class="pill">A moment of calm before you go</span>') +
     ['places','transport','items','people'].map((kind,i)=>{
-      const multi = kind==='items' || kind==='people';
-      return `<section class="step" aria-labelledby="${kind}Heading"><div class="step-heading"><div class="step-title"><h2 id="${kind}Heading"><span class="step-number">${i+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][i]}</h2>${multi?'<p class="step-optional">Optional</p>':''}</div>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items' ? `${selected.items.length} of ${MAX_BRING_ITEMS} selected` : `${selected.people.length} selected`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${state[kind].length ? `<div class="grid">${state[kind].map(x=>{
+      const multi = kind==='items' || kind==='people', ready=stepReady[kind];
+      return `<section class="step ${ready?'':'step-inactive'}" aria-disabled="${!ready}" aria-labelledby="${kind}Heading"><div class="step-heading"><div class="step-title"><h2 id="${kind}Heading"><span class="step-number">${i+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][i]}</h2>${multi?'<p class="step-optional">Optional</p>':''}</div>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items' ? `${selected.items.length} of ${MAX_BRING_ITEMS} selected` : `${selected.people.length} selected`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${!ready?`<p class="step-prerequisite">${kind==='transport'?'Choose a place first.':kind==='items'?'Choose transport first.':'Choose items or skip that step first.'}</p>`:''}${kind==='items'&&ready&&!itemsReviewed&&!selected.items.length&&state.items.length?'<button id="skipItems" type="button" class="secondary skip-items">No items to bring →</button>':''}<div class="step-options" ${ready?'':'inert'}>${state[kind].length ? `<div class="grid">${state[kind].map(x=>{
         const active = multi ? selected[kind].some(item=>item.id===x.id) : selected[kind]?.id===x.id;
         const atLimit = kind==='items' && !active && selected.items.length>=MAX_BRING_ITEMS;
-        return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${x.id}" aria-pressed="${active}" ${atLimit?'disabled':''}><img src="${esc(x.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(x.name)}</span></button>`;
-      }).join('')}</div>` : empty(kind)}</section>`;
+        return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${x.id}" aria-pressed="${active}" ${atLimit||!ready?'disabled':''}><img src="${esc(x.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(x.name)}</span></button>`;
+      }).join('')}</div>` : empty(kind)}</div></section>`;
     }).join('')+
-    `<div class="journey-bar"><div><strong>${selected.places && selected.transport ? `${esc(selected.places.name)} · ${esc(selected.transport.name)}${selected.items.length ? ` · ${selected.items.length} to bring` : ''}` : 'Choose a place and transport to continue'}</strong></div><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`, 'choose');
+    `<div class="journey-bar" ${selected.places?'':'hidden'}><div><strong>${selected.places && selected.transport ? `${esc(selected.places.name)} · ${esc(selected.transport.name)}${selected.items.length ? ` · ${selected.items.length} to bring` : ''}` : 'Choose a place and transport to continue'}</strong></div><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`, 'choose');
   app.querySelectorAll('[data-kind]').forEach(button => button.onclick = () => {
     const {kind,id} = button.dataset;
     const item = state[kind].find(x=>x.id===id);
+    if(!stepReady[kind])return;
+    if(kind==='items')itemsReviewed=true;
     if(kind==='items' || kind==='people') {
       if(selected[kind].some(x=>x.id===id)) selected[kind]=selected[kind].filter(x=>x.id!==id);
       else if(kind==='people' || selected.items.length<MAX_BRING_ITEMS) selected[kind].push(item);
@@ -58,7 +63,9 @@ function renderChoose() {
     renderChoose();
     app.querySelector(`[data-kind="${kind}"][data-id="${id}"]`)?.focus({preventScroll:true});
   });
+  if($('#skipItems'))$('#skipItems').onclick=()=>{itemsReviewed=true;renderChoose();$('#peopleHeading').scrollIntoView({block:'nearest'});};
   $('#start').onclick = () => {
+    if(!selected.places||!selected.transport)return;
     pendingJourney = {places:selected.places, transport:selected.transport, items:selected.items.slice(0,MAX_BRING_ITEMS), people:[...selected.people]};
     let skip=false;
     try { skip=localStorage.getItem('tc-skip-plan-intro')==='true'; } catch {}
@@ -88,7 +95,7 @@ function finishJourney() {
   catch { toast('Allow browser storage to finish this saved plan.');return; }
   selected={places:locked.places,transport:locked.transport,items:locked.items||[],people:locked.people||[]};
   state ??= {places:[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
-  locked=null;taps=[];
+  locked=null;taps=[];itemsReviewed=true;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
   location.hash='choose';renderChoose();
 }
@@ -255,9 +262,25 @@ $('#editForm').onsubmit=async e=>{
   } catch(error){$('#editError').textContent=error.message;}
   finally{$('#editForm').dataset.busy='false';$('#editCancel').disabled=false;updateEditSave();}
 };
+function orderControl(item,direction,disabled) {
+  return `<button type="button" class="library-action" data-order="${item.id}" data-direction="${direction}" aria-label="Move ${esc(item.name)} ${direction}" title="Move ${direction}" ${disabled||reorderBusy?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${direction==='left'?'M19 12H5m6-6-6 6 6 6':'M5 12h14m-6-6 6 6-6 6'}"/></svg></button>`;
+}
 function renderLibrary() {
   const items=state[category];
-  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map(x=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Add your first picture using the form.</p></div>`;
+  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map((x,index)=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-order">${orderControl(x,'left',index===0)}${orderControl(x,'right',index===items.length-1)}</div><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Add your first picture using the form.</p></div>`;
+  app.querySelectorAll('[data-order]').forEach(button=>button.onclick=async()=>{
+    if(reorderBusy)return;
+    const kind=category, id=button.dataset.order, direction=button.dataset.direction;
+    const index=items.findIndex(item=>item.id===id), neighbour=items[index+(direction==='left'?-1:1)];
+    if(!neighbour)return;
+    reorderBusy=true;app.querySelectorAll('[data-order]').forEach(control=>control.disabled=true);
+    try {await api('reorder',{kind,id,direction,neighbourId:neighbour.id});await refresh();}
+    catch(error){toast(error.message);try{await refresh();}catch{}}
+    finally{
+      reorderBusy=false;
+      if($('#library')){renderLibrary();const next=app.querySelector(`[data-order="${id}"][data-direction="${direction}"]:not(:disabled)`)||app.querySelector(`[data-order="${id}"]:not(:disabled)`);next?.focus({preventScroll:true});}
+    }
+  });
   app.querySelectorAll('[data-crop]').forEach(button=>button.onclick=async()=>{
     const kind=category, item=state[kind].find(x=>x.id===button.dataset.crop);
     button.disabled=true;

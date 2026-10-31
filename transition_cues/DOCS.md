@@ -46,7 +46,9 @@ In **Picture library**, choose a photo, enter its name, then choose the **Place*
 
 ## Manage existing pictures
 
-Each library picture has four icon buttons with accessible names and tooltips: **Crop**, **Rename** (pencil), **Change category** (transfer arrows), and **Remove** (red bin). Remove still asks for confirmation.
+Each library picture has left/right arrows to reorder it within its category. The order is saved on the server and used by every device in the library and journey picker. Edge arrows are disabled; new uploads and transferred pictures join the end of their category. Existing displayed plans keep their current order.
+
+Each library picture also has four icon buttons with accessible names and tooltips: **Crop**, **Rename** (pencil), **Change category** (transfer arrows), and **Remove** (red bin). Remove still asks for confirmation.
 
 Rename opens the current name for editing; save a non-empty name of up to 60 characters. Change category opens Place, Transport, Items and People icons; choose a different category, then **Move picture**. The library switches to the destination category after moving. The item keeps its identity, photo and retained original. Pictures moved to People display as circles; use Crop if the framing needs adjusting. Cancel closes either dialog without changes. Names and pictures in plans already on screen remain unchanged, including after reload.
 
@@ -63,6 +65,8 @@ New transparent originals retain their transparency for later edits. Images uplo
 Crops keep the existing picture's name and category. Images on an already-locked journey are fixed, so they do not change when a parent crops or removes a photo on another device. The updated image is used for the next journey. Retained originals and older versions use some additional disk space. All editing stays in your browser and on your Home Assistant machine; no external image service is used.
 
 ## Plan a journey
+
+The numbered sections enable in sequence. Choose a place to enable Transport, then choose transport to enable Items. People enables after you select an item or press **No items to bring**; if the item library is empty, People enables automatically. Deselecting the last item still allows People, since Items is optional. **Show the plan** appears after choosing a place and becomes available once transport is selected; both optional sections may be left empty.
 
 Choose one place and one transport picture. Optionally select zero to four items; tap a selected item to deselect it. Select any people coming along, or leave People empty. People has no four-person cap. Tap **Show the plan**.
 
