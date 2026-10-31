@@ -29,9 +29,21 @@ def run(engine):
                 expect(page.locator('#returnUrl')).to_be_visible()
                 page.get_by_role('link',name='Back to plan',exact=False).click()
                 expect(page.locator('#start')).not_to_be_visible()
-                names=[['places','An especially long destination name across several lines'],['transport','Bus'],['people','A person with a much longer name'],['people','Person B'],['items','Headphones with a very long name'],['items','Drink']]
+                names=[['places','An especially long destination name across several lines'],['transport','Bus'],['people','A person with a much longer name'],['people','Person B'],['items','Headphones with a very long name'],['items','Drink'],['places','Park'],['transport','A much longer name for the way we travel']]
                 page.evaluate("""async names=>{for(const [kind,name] of names){const canvas=document.createElement('canvas');canvas.width=canvas.height=400;const ctx=canvas.getContext('2d');ctx.fillStyle={places:'#9caf88',transport:'#ddbd86',people:'#c5b5d3',items:'#a8c5d6'}[kind];ctx.fillRect(0,0,400,400);const image=canvas.toDataURL('image/png').split(',')[1];const r=await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})});if(!r.ok)throw Error('Fixture upload failed')}}""",names)
                 page.reload()
+                expect(page.locator('[data-kind="places"]')).to_have_count(2)
+                # Selection cards must top-align photos and name starts, even when one name wraps.
+                for width,height in [(390,844),(768,1024),(1024,768),(1280,900)]:
+                    page.set_viewport_size({'width':width,'height':height})
+                    for kind in ['places','transport','items','people']:
+                        photos=page.locator(f'[data-kind="{kind}"] img').all()
+                        captions=page.locator(f'[data-kind="{kind}"] .name').all()
+                        a,b=[photo.bounding_box() for photo in photos]
+                        assert abs(a['y']-b['y'])<1,(kind,width,'photo alignment',a,b)
+                        assert abs(captions[0].bounding_box()['y']-captions[1].bounding_box()['y'])<1,(kind,width,'name alignment')
+                    assert page.locator('[data-kind="places"] .name').first.bounding_box()['height']>page.locator('[data-kind="places"] .name').last.bounding_box()['height']
+                page.screenshot(path='/tmp/transition-cues-aligned-picker.png',full_page=True)
                 expect(page.locator('#start')).not_to_be_visible()
                 expect(page.get_by_role('button',name='Bus',exact=True)).to_be_disabled()
                 expect(page.get_by_role('button',name='Drink',exact=True)).to_be_disabled()
@@ -86,7 +98,7 @@ def run(engine):
                 page.reload();expect(page.locator('#start')).not_to_be_visible()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): sequential sections, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, sequential sections, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

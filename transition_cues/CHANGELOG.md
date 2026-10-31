@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.14
+
+- Top-align selection card photos and names so multiline names expand downward without shifting adjacent photos.
+- Check mixed-length names in all four picker categories at phone and tablet widths in Chromium and Safari’s engine.
+
 ## 1.0.13
 
 - Add saved left/right ordering controls to every library category, reflected in the journey picker.
