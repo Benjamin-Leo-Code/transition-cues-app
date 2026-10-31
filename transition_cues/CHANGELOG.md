@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- Use square crops and square photo frames throughout; keep People circular.
+- Fill the square by default, allow zooming out and fitting the whole photo, and offer a background colour only when there are gaps or any source transparency.
+- Preserve transparency in new originals and bake the chosen background into saved square images.
+
 ## 1.0.4
 
 - Move To and By beside the destination and transport names beneath their photos, using separate italic labels vertically centred against each name.

@@ -1,4 +1,5 @@
 """Exercise optional people and pixel-checked cropping in tablet/phone browsers."""
+import argparse
 import base64
 import os
 from pathlib import Path
@@ -11,15 +12,15 @@ from playwright.sync_api import sync_playwright, expect
 from browser_helpers import track_fullscreen, leave_fullscreen, type_pin, show_plan
 
 
-def run():
+def run(engine):
     with tempfile.TemporaryDirectory() as data:
         server=make_server('127.0.0.1', 0, data)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         try:
             with sync_playwright() as p:
                 options={'headless':True}
-                if os.environ.get('CHROMIUM_PATH'):options['executable_path']=os.environ['CHROMIUM_PATH']
-                browser=p.chromium.launch(**options)
+                if engine=='chromium' and os.environ.get('CHROMIUM_PATH'):options['executable_path']=os.environ['CHROMIUM_PATH']
+                browser=getattr(p,engine).launch(**options)
                 tablet=browser.new_context(viewport={'width':1280,'height':900})
                 page=tablet.new_page();track_fullscreen(page);errors=[]
                 page.on('pageerror',lambda e:errors.append(str(e)))
@@ -42,42 +43,84 @@ def run():
                     mobile.locator('#photo').set_input_files({'name':'test.png','mimeType':'image/png','buffer':base64.b64decode(png)})
                     expect(mobile.locator('#photoPreview')).to_be_visible()
                     preview=mobile.locator('#photoPreview').get_attribute('src')
-                    assert dimensions(preview)==([400,400] if kind=='people' else [533,400])
+                    assert dimensions(preview)==[400,400]
+                    bounds=mobile.locator('#photoPreview').bounding_box()
+                    assert abs(bounds['width']-bounds['height'])<1,bounds
                     if crop:
                         mobile.locator('#cropUpload').click()
                         expect(mobile.locator('#cropDialog')).to_be_visible()
-                        expect(mobile.locator('#cropAspect')).to_have_value('1.3333333333')
-                        assert mobile.locator('#cropAspect option').all_text_contents()==['Landscape · 4:3','Square','Original proportions']
-                        mobile.locator('#cropAspect').select_option('1')
+                        expect(mobile.locator('#cropAspect')).to_have_count(0)
+                        expect(mobile.locator('#cropBackgroundGroup')).not_to_be_visible()
                         mobile.locator('#cropZoom').fill('2');mobile.locator('#cropX').fill('100')
                         mobile.locator('#cropSave').click()
                         expect(mobile.locator('#cropDialog')).not_to_be_visible()
                     mobile.locator('#uploadButton').click()
                     expect(mobile.locator('.library-item strong',has_text=name)).to_be_visible()
                     saved=mobile.evaluate('''async ({kind,name})=>{const s=await(await fetch('/api/state')).json();return s[kind].find(i=>i.name===name)}''',{'kind':kind,'name':name})
-                    assert dimensions(saved['image'])==([200,200] if crop else [400,400] if kind=='people' else [533,400])
+                    assert dimensions(saved['image'])==([200,200] if crop else [400,400])
                     assert dimensions(saved['originalImage'])==[600,400]
+                    for image in mobile.locator('.library-item img').all():
+                        bounds=image.bounding_box()
+                        assert abs(bounds['width']-bounds['height'])<1,bounds
 
                 upload('places','Park',crop=True)
                 uploaded=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.places[0]}")
                 assert uploaded['image']!=uploaded['originalImage'], 'Upload crop must retain its original'
                 upload('transport','Bus')
-                # Original proportions can restore all of the retained source photo.
+                # Fit the entire source inside a square, with saved coloured letterboxing.
                 mobile.get_by_role('button',name='Crop Bus',exact=True).click()
-                expect(mobile.locator('#cropAspect')).to_have_value('1.3333333333')
-                mobile.locator('#cropAspect').select_option('original')
+                expect(mobile.locator('#cropBackgroundGroup')).not_to_be_visible()
+                mobile.locator('#cropFit').click()
+                expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()
+                mobile.locator('#cropBackground').fill('#2468ac')
+                mobile.locator('#cropZoom').fill('2')
+                expect(mobile.locator('#cropBackgroundGroup')).not_to_be_visible()
+                mobile.locator('#cropFit').click()
+                mobile.screenshot(path='/tmp/transition-cues-square-crop.png',full_page=False)
                 mobile.locator('#cropSave').click()
                 expect(mobile.locator('#cropDialog')).not_to_be_visible()
                 bus=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.transport[0]}")
-                assert dimensions(bus['image'])==[600,400]
+                assert dimensions(bus['image'])==[600,600]
+                def pixel(src,x,y):
+                    return mobile.evaluate('''async ({src,x,y})=>{const i=new Image();i.src=src;await i.decode();const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const ctx=c.getContext('2d');ctx.drawImage(i,0,0);return [...ctx.getImageData(x,y,1,1).data]}''',{'src':src,'x':x,'y':y})
+                def assert_background(src,x,y):
+                    sample=pixel(src,x,y)
+                    assert all(abs(a-b)<5 for a,b in zip(sample,[36,104,172,255])),sample
+                assert_background(bus['image'],300,20)
+                assert pixel(bus['image'],20,300)[0]>180  # Original left edge still visible.
+                assert pixel(bus['image'],580,300)[2]>180  # Original right edge still visible.
+                # Full and partial transparency must enable the picker even without zooming out.
+                transparent=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');x.fillStyle='#d00000';x.fillRect(0,0,200,400);x.fillStyle='rgba(255,255,255,.5)';x.fillRect(200,0,200,400);return c.toDataURL('image/png').split(',')[1]}''')
+                mobile.locator('#kind').select_option('places');mobile.locator('#name').fill('Transparent symbol')
+                mobile.locator('#photo').set_input_files({'name':'transparent.png','mimeType':'image/png','buffer':base64.b64decode(transparent)})
+                mobile.locator('#cropUpload').click()
+                expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()
+                mobile.locator('#cropBackground').fill('#2468ac');mobile.locator('#cropSave').click()
+                mobile.locator('#uploadButton').click()
+                expect(mobile.locator('.library-item strong',has_text='Transparent symbol')).to_be_visible()
+                symbol=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.places.find(i=>i.name==='Transparent symbol')}")
+                assert dimensions(symbol['image'])==[400,400]
+                assert_background(symbol['image'],350,200)
+                assert pixel(symbol['originalImage'],500,200)[3]==0
+                assert 120<pixel(symbol['originalImage'],300,200)[3]<135
+                mobile.get_by_role('button',name='Crop Transparent symbol',exact=True).click()
+                mobile.locator('#cropZoom').fill('4')
+                expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()
+                mobile.locator('#cropCancel').click()
 
+                # Partial alpha on its own also enables the colour picker at fill zoom.
+                partial=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=c.height=100;const x=c.getContext('2d');x.fillStyle='rgba(255,0,0,.5)';x.fillRect(0,0,100,100);return c.toDataURL('image/png').split(',')[1]}''')
+                mobile.locator('#photo').set_input_files({'name':'partial.png','mimeType':'image/png','buffer':base64.b64decode(partial)})
+                mobile.locator('#cropUpload').click()
+                expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()
+                mobile.locator('#cropCancel').click()
                 for name in ['Drink','Coat','Toy','Headphones']:upload('items',name)
                 upload('people','Person A');upload('people','Person B')
                 # A cancelled edit makes no API write and doesn't change the stored URL.
                 get_person=lambda:mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.people[0]}")
                 person=get_person(); old_image=person['image']
                 mobile.get_by_role('button',name='Crop Person A',exact=True).click()
-                expect(mobile.locator('#cropAspect')).to_be_disabled()
+                expect(mobile.locator('#cropAspect')).to_have_count(0)
                 expect(mobile.locator('#cropCanvas')).to_have_class('round')
                 mobile.locator('#cropZoom').fill('2')
                 canvas=mobile.locator('#cropCanvas');canvas.scroll_into_view_if_needed();bounds=canvas.bounding_box()
@@ -88,6 +131,9 @@ def run():
                 mobile.locator('#cropCancel').click()
                 assert get_person()['image']==old_image
                 page.reload();page.get_by_role('button',name='Park',exact=True).click();page.get_by_role('button',name='Bus',exact=True).click()
+                for image in page.locator('.picture img').all():
+                    bounds=image.bounding_box()
+                    assert abs(bounds['width']-bounds['height'])<1,bounds
                 # Neither People nor bring-along items is required.
                 expect(page.locator('#start')).to_be_enabled();show_plan(page)
                 expect(page.locator('.journey-people')).to_have_count(0)
@@ -109,6 +155,9 @@ def run():
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    for photo in page.locator('.cue-card img,.bring-card img').all():
+                        bounds=photo.bounding_box()
+                        assert abs(bounds['width']-bounds['height'])<1,bounds
                     assert page.locator('.journey-people').evaluate('(s)=>s.getBoundingClientRect().top>=document.querySelector(".cue-pair").getBoundingClientRect().bottom')
                     page.locator('.bring-items').scroll_into_view_if_needed()
                     expect(page.locator('.bring-card').last).to_be_in_viewport()
@@ -148,9 +197,11 @@ def run():
                 page.reload();expect(page.locator('#lockedSurface')).to_be_visible();expect(page.locator('.journey-people')).to_have_count(0)
                 assert not errors,errors
                 browser.close()
-                print('PASS: footer removal, optional people, circles, responsive layout, upload crop, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, PIN and legacy journey restore.')
+                print('PASS: footer removal, optional people, circles, responsive layout, square frames, fill and fit, coloured bars, transparency preservation, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, PIN and legacy journey restore.')
         finally:
             server.shutdown();server.server_close();thread.join()
 
 
-if __name__=='__main__':run()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--browser',choices=['chromium','webkit'],default='chromium')
+    run(parser.parse_args().browser)

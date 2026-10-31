@@ -36,7 +36,11 @@ In **Picture library**, select **A place**, **A way to travel**, **An item to br
 
 ## Crop photos
 
-New place, transport and bring-along photos automatically receive a centred 4:3 crop, shown in the upload preview. Tap **Crop photo** to adjust it, or use **Crop photo** on an existing library picture. Drag the preview, adjust Zoom and the horizontal/vertical sliders, and choose Landscape (4:3), Square or Original proportions. Existing library photos stay unchanged until you save a crop. People use a square crop with a circular preview so you can centre the face. The circular appearance is used in the picker, library and locked display; the underlying image is a normal square JPEG.
+All new photos automatically fill a centred square crop, shown in the upload preview. Photo frames are square in the picker, library and locked display. People keep their circular appearance, using a square saved image. Existing photos are shown within square frames; their saved files and locked snapshots are not rewritten automatically.
+
+Tap **Crop photo** on an upload or library picture to adjust it. The frame is always square. Drag or use the position sliders to move the image. Zoom starts at 1 (fill); zoom in for a closer crop, or zoom out to add space around the image. **Fit whole photo** shows the entire photo inside the square. The **Background colour** picker appears only when there are gaps around the image or when the source contains any transparency, including partial transparency. The selected colour fills those gaps and transparent areas in the saved photo. Opaque images that fill the frame have no colour option.
+
+New transparent originals retain their transparency for later edits. Images uploaded in older releases may already have had transparency flattened; upload the original again to recover it. Transparent originals may be resized further to fit the upload limit.
 
 **Use crop** applies the crop. For new photos, finish with **Add to library**; for existing photos, Use crop saves directly to the library. **Cancel** leaves the picture unchanged. **Reset** recentres the editor and resets its zoom. Photos and retained originals are resized to at most 1600 pixels. Reopening the editor starts from the saved original, allowing you to reframe a previous crop. For an older picture with no saved original, its current image becomes the original on the first crop.
 

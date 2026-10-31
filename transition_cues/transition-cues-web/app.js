@@ -180,7 +180,7 @@ $('#pinForm').onsubmit = async e => {
 };
 function renderManage() {
   frame(intro('YOUR FAMILY’S PICTURE LIBRARY','Little pictures. Familiar faces.','Add your own photos, so every journey starts with something familiar.')+
-    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos are cropped to 4:3 automatically. Use Crop photo to change the shape or framing. People use a square crop shown as a circle.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
+    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
   $('#kind').value=category;
   app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{category=b.dataset.tab;renderManage();});
   renderLibrary();
@@ -188,7 +188,7 @@ function renderManage() {
   const uploadForm=$('#uploadForm');
   let wasPerson = $('#kind').value==='people';
   const defaultCrop=()=>{
-    const current=++revision, file=$('#photo').files[0], circle=$('#kind').value==='people';
+    const current=++revision, file=$('#photo').files[0];
     croppedImage=null;
     $('#photoPreview').hidden=true; $('#cropUpload').hidden=true;
     $('#uploadButton').disabled=!!file;
@@ -196,7 +196,7 @@ function renderManage() {
     preparing=(async()=>{
       if(!file)return;
       try {
-        const image=await preparePhoto(file,circle?1:4/3);
+        const image=await preparePhoto(file,1);
         if(current!==revision || !document.contains(uploadForm))return;
         croppedImage=image; $('#photoPreview').src='data:image/jpeg;base64,'+image;
         $('#photoPreview').hidden=false; $('#cropUpload').hidden=false;
@@ -227,7 +227,7 @@ function renderManage() {
   };
   $('#uploadForm').onsubmit=async e=>{
     e.preventDefault(); const button=$('#uploadButton'); button.disabled=true;button.textContent='Adding picture…'; $('#uploadError').textContent='';
-    try { await preparing; const kind=$('#kind').value; const image=croppedImage || await preparePhoto($('#photo').files[0],kind==='people'?1:4/3); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
+    try { await preparing; const kind=$('#kind').value; const image=croppedImage || await preparePhoto($('#photo').files[0],1); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
     catch(error) { $('#uploadError').textContent=error.message; }
     finally { if(document.contains(button)){button.disabled=false;button.textContent='Add to library ＋';} }
   };
@@ -236,13 +236,27 @@ function validatePhoto(file) {
   if(!file || !['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP photo. HEIC photos need converting first.');
   if(file.size>25*1024*1024) throw new Error('Choose a photo smaller than 25 MB.');
 }
-function exportPhoto(img,box) {
-  const scale=Math.min(1,1600/Math.max(box.width,box.height));
+function imageHasTransparency(img) {
+  // Scan strips at source resolution so even small translucent areas are detected.
+  const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=Math.min(64,img.height);
+  const context=canvas.getContext('2d',{willReadFrequently:true});
+  for(let y=0;y<img.height;y+=canvas.height) {
+    const height=Math.min(canvas.height,img.height-y);
+    context.clearRect(0,0,canvas.width,canvas.height);
+    context.drawImage(img,0,y,img.width,height,0,0,img.width,height);
+    const pixels=context.getImageData(0,0,img.width,height).data;
+    for(let i=3;i<pixels.length;i+=4)if(pixels[i]<255)return true;
+  }
+  return false;
+}
+function exportPhoto(img,box,background='#ffffff',maxEdge=1600) {
+  const scale=Math.min(1,maxEdge/Math.max(box.width,box.height));
   const canvas=document.createElement('canvas');
   canvas.width=Math.max(1,Math.round(box.width*scale));canvas.height=Math.max(1,Math.round(box.height*scale));
-  const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
+  const context=canvas.getContext('2d');
+  if(background!==null){context.fillStyle=background;context.fillRect(0,0,canvas.width,canvas.height);}
   context.drawImage(img,box.x,box.y,box.width,box.height,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL('image/jpeg',.9).split(',')[1];
+  return canvas.toDataURL(background===null?'image/png':'image/jpeg',.9).split(',')[1];
 }
 async function preparePhoto(file,aspect=null) {
   validatePhoto(file);
@@ -251,7 +265,12 @@ async function preparePhoto(file,aspect=null) {
     const img=new Image();img.src=url;await img.decode();
     const width=aspect?Math.min(img.width,img.height*aspect):img.width;
     const height=aspect?width/aspect:img.height;
-    return exportPhoto(img,{x:(img.width-width)/2,y:(img.height-height)/2,width,height});
+    const transparent=!aspect && imageHasTransparency(img);
+    const box={x:(img.width-width)/2,y:(img.height-height)/2,width,height};
+    let maxEdge=1600, image=exportPhoto(img,box,transparent?null:'#ffffff',maxEdge);
+    // Transparent PNG originals can be larger than JPEGs; stay within the upload limit.
+    while(transparent && image.length>3*1024*1024){maxEdge*=.8;image=exportPhoto(img,box,null,maxEdge);}
+    return image;
   } catch { throw new Error('This photo could not be opened. Try another JPEG, PNG or WebP photo.'); }
   finally { URL.revokeObjectURL(url); }
 }
@@ -323,30 +342,35 @@ let cropState=null;
 async function openCrop(source, circle, save) {
   const img=new Image(); img.src=source;
   try { await img.decode(); } catch { throw new Error('This photo could not be opened. Try a different photo or refresh the library.'); }
-  cropState={img,circle,save,busy:false};
+  cropState={img,circle,save,busy:false,transparent:imageHasTransparency(img)};
   $('#cropError').textContent='';
-  $('#cropAspect').value=circle?'1':'1.3333333333'; $('#cropAspect').disabled=circle;
-  $('#cropHelp').textContent=circle ? 'Centre the face inside the circle. Drag to move, or use the sliders. The saved photo is square and displays as a circle.' : 'Drag the picture or use the sliders to frame it. Existing pictures are cropped from their saved original.';
+  $('#cropZoom').min=String(Math.min(.25,Math.min(img.width,img.height)/Math.max(img.width,img.height)/2));
+  $('#cropBackground').value='#ffffff';
+  $('#cropHelp').textContent=circle ? 'Centre the face inside the circle. Zoom out to fit more of the photo; any gaps can have a background colour. The saved photo is square and displays as a circle.' : 'The frame is always square. Drag to move, zoom in to fill it, or zoom out to fit more of the photo. Choose a background colour for gaps or transparency.';
   $('#cropCanvas').classList.toggle('round',circle);
   resetCrop(); $('#cropDialog').showModal();
 }
 function cropRect() {
   const {img}=cropState;
-  const aspect=$('#cropAspect').value==='original' ? img.width/img.height : Number($('#cropAspect').value);
-  const width=Math.min(img.width,img.height*aspect)/Number($('#cropZoom').value), height=width/aspect;
-  return {x:(img.width-width)*Number($('#cropX').value)/100, y:(img.height-height)*Number($('#cropY').value)/100, width,height,aspect};
+  const width=Math.min(img.width,img.height)/Number($('#cropZoom').value);
+  return {x:(img.width-width)*Number($('#cropX').value)/100, y:(img.height-width)*Number($('#cropY').value)/100, width,height:width};
 }
+function cropHasGaps(box) {
+  return box.width>cropState.img.width+.01 || box.height>cropState.img.height+.01;
+}
+function cropBackground(box) { return cropHasGaps(box)||cropState.transparent?$('#cropBackground').value:'#ffffff'; }
 function drawCrop() {
   if(!cropState)return;
   const box=cropRect(), canvas=$('#cropCanvas');
-  canvas.width=Math.max(1,Math.round(560*Math.min(1,box.aspect)));
-  canvas.height=Math.max(1,Math.round(560/Math.max(1,box.aspect)));
-  const context=canvas.getContext('2d'); context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
-  context.drawImage(cropState.img,box.x,box.y,box.width,box.height,0,0,canvas.width,canvas.height);
+  canvas.width=canvas.height=560;
+  $('#cropBackgroundGroup').hidden=!(cropHasGaps(box)||cropState.transparent);
+  const context=canvas.getContext('2d'); context.fillStyle=cropBackground(box);context.fillRect(0,0,560,560);
+  context.drawImage(cropState.img,box.x,box.y,box.width,box.height,0,0,560,560);
 }
 function resetCrop() { $('#cropZoom').value='1';$('#cropX').value='50';$('#cropY').value='50';drawCrop(); }
 for(const id of ['cropZoom','cropX','cropY']) $('#'+id).oninput=drawCrop;
-$('#cropAspect').onchange=resetCrop;
+$('#cropBackground').oninput=drawCrop;
+$('#cropFit').onclick=()=>{const {img}=cropState;$('#cropZoom').value=String(Math.min(img.width,img.height)/Math.max(img.width,img.height));$('#cropX').value=$('#cropY').value='50';drawCrop();};
 $('#cropReset').onclick=resetCrop;
 $('#cropCancel').onclick=()=>$('#cropDialog').close();
 $('#cropDialog').addEventListener('cancel',e=>{if(cropState?.busy)e.preventDefault();});
@@ -359,7 +383,7 @@ $('#cropCanvas').onpointerdown=e=>{
 $('#cropCanvas').onpointermove=e=>{
   if(!cropDrag || !cropState)return;
   const box=cropRect(), bounds=e.currentTarget.getBoundingClientRect(), img=cropState.img;
-  const move=(id,delta,available)=>{if(available>0)$('#'+id).value=String(Math.min(100,Math.max(0,Number($('#'+id).value)-delta/available*100)));};
+  const move=(id,delta,available)=>{if(Math.abs(available)>.01)$('#'+id).value=String(Math.min(100,Math.max(0,Number($('#'+id).value)-delta/available*100)));};
   move('cropX',(e.clientX-cropDrag.x)*box.width/bounds.width,img.width-box.width);
   move('cropY',(e.clientY-cropDrag.y)*box.height/bounds.height,img.height-box.height);
   cropDrag={x:e.clientX,y:e.clientY};drawCrop();
@@ -367,12 +391,12 @@ $('#cropCanvas').onpointermove=e=>{
 $('#cropCanvas').onpointerup=$('#cropCanvas').onpointercancel=()=>{cropDrag=null;};
 $('#cropForm').onsubmit=async e=>{
   e.preventDefault();if(!cropState || cropState.busy)return;
-  const editing=cropState, image=exportPhoto(editing.img,cropRect());
+  const editing=cropState, box=cropRect(), image=exportPhoto(editing.img,box,cropBackground(box));
   editing.busy=true; $('#cropError').textContent='';
   const controls=[...$('#cropForm').querySelectorAll('button,input,select')];controls.forEach(control=>control.disabled=true);
   try {await editing.save(image);$('#cropDialog').close();}
   catch(error){$('#cropError').textContent=error.message;}
-  finally{editing.busy=false;controls.forEach(control=>control.disabled=false);$('#cropAspect').disabled=editing.circle;}
+  finally{editing.busy=false;controls.forEach(control=>control.disabled=false);}
 };
 
 start();

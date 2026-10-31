@@ -83,5 +83,5 @@ print('PASS: replacement container preserves library, images and PIN in /data')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image', default='transition-cues-ha-check:1.0.4')
+    parser.add_argument('--image', default='transition-cues-ha-check:1.0.5')
     run(parser.parse_args().image)

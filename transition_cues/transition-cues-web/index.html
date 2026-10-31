@@ -19,9 +19,10 @@
 <dialog id="deleteDialog" aria-labelledby="deleteTitle"><form id="deleteForm"><span class="eyebrow">PICTURE LIBRARY</span><h2 id="deleteTitle">Remove this picture?</h2><p id="deleteText"></p><div class="dialog-actions"><button type="button" class="secondary" id="deleteCancel">Keep picture</button><button type="submit" class="danger">Remove</button></div></form></dialog>
 <dialog id="cropDialog" aria-labelledby="cropTitle">
 <form id="cropForm"><span class="eyebrow">PICTURE EDITOR</span><h2 id="cropTitle">Crop photo</h2><p id="cropHelp">Drag the picture or use the sliders to frame it. Changes are saved only when you choose Use crop.</p>
-<div class="crop-preview"><canvas id="cropCanvas" width="560" height="420" aria-label="Crop preview; drag to reposition the image"></canvas></div>
-<label for="cropAspect">Shape</label><select id="cropAspect"><option value="1.3333333333">Landscape · 4:3</option><option value="1">Square</option><option value="original">Original proportions</option></select>
-<label for="cropZoom">Zoom</label><input id="cropZoom" type="range" min="1" max="4" step="0.01" value="1">
+<div class="crop-preview"><canvas id="cropCanvas" width="560" height="560" aria-label="Crop preview; drag to reposition the image"></canvas></div>
+<p class="help">Square frame · zoom 1 fills the frame. Zoom out or choose Fit whole photo to add space around the picture.</p><button id="cropFit" type="button" class="secondary">Fit whole photo</button>
+<label for="cropZoom">Zoom</label><input id="cropZoom" type="range" min="0.25" max="4" step="any" value="1">
+<div id="cropBackgroundGroup" hidden><label for="cropBackground">Background colour</label><input id="cropBackground" type="color" value="#ffffff"><p class="help">Colours gaps around the photo and any transparent areas inside its square frame.</p></div>
 <label for="cropX">Horizontal position</label><input id="cropX" type="range" min="0" max="100" step="0.1" value="50">
 <label for="cropY">Vertical position</label><input id="cropY" type="range" min="0" max="100" step="0.1" value="50">
 <p id="cropError" class="error" role="alert"></p><div class="dialog-actions"><button id="cropReset" type="button" class="secondary">Reset</button><button id="cropCancel" type="button" class="secondary">Cancel</button><button id="cropSave" type="submit" class="primary">Use crop</button></div>
