@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.12
+
+- Reorder the upload form: choose a photo first, enter its name second, then choose its category.
+
 ## 1.0.11
 
 - Replace library crop/remove text with accessible icon buttons; show deletion in red.
