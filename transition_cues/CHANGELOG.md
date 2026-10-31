@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Move To and By beside the destination and transport names beneath their photos, using separate italic labels vertically centred against each name.
+
 ## 1.0.3
 
 - Move the lock instructions into a splash screen between Show the plan and the locked journey.
