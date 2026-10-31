@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Automatically apply a centred 4:3 crop to new place, transport and bring-along photos, with a matching upload preview. People use a square crop for circular portraits.
+- Keep the original photo for later adjustments; existing library photos remain unchanged.
+- Default the crop editor to 4:3 and offer Square or Original proportions. Remove the Portrait option.
+
 ## 1.0.1
 
 - Replace PIN password fields with an on-screen number pad for setup, unlocking and PIN changes, avoiding Safari's password-creation suggestions.

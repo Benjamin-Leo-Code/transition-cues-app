@@ -35,22 +35,42 @@ def run():
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Three colour bands make a crop's actual output measurable.
                 png=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');['#d00000','#00b000','#0000d0'].forEach((color,i)=>{x.fillStyle=color;x.fillRect(i*200,0,200,400)});return c.toDataURL('image/png').split(',')[1]}''')
+                def dimensions(src):
+                    return mobile.evaluate('''async src=>{const i=new Image();i.src=src;await i.decode();return [i.width,i.height]}''',src)
                 def upload(kind,name,crop=False):
                     mobile.locator('#kind').select_option(kind);mobile.locator('#name').fill(name)
                     mobile.locator('#photo').set_input_files({'name':'test.png','mimeType':'image/png','buffer':base64.b64decode(png)})
+                    expect(mobile.locator('#photoPreview')).to_be_visible()
+                    preview=mobile.locator('#photoPreview').get_attribute('src')
+                    assert dimensions(preview)==([400,400] if kind=='people' else [533,400])
                     if crop:
                         mobile.locator('#cropUpload').click()
                         expect(mobile.locator('#cropDialog')).to_be_visible()
+                        expect(mobile.locator('#cropAspect')).to_have_value('1.3333333333')
+                        assert mobile.locator('#cropAspect option').all_text_contents()==['Landscape · 4:3','Square','Original proportions']
                         mobile.locator('#cropAspect').select_option('1')
                         mobile.locator('#cropZoom').fill('2');mobile.locator('#cropX').fill('100')
                         mobile.locator('#cropSave').click()
                         expect(mobile.locator('#cropDialog')).not_to_be_visible()
                     mobile.locator('#uploadButton').click()
                     expect(mobile.locator('.library-item strong',has_text=name)).to_be_visible()
+                    saved=mobile.evaluate('''async ({kind,name})=>{const s=await(await fetch('/api/state')).json();return s[kind].find(i=>i.name===name)}''',{'kind':kind,'name':name})
+                    assert dimensions(saved['image'])==([200,200] if crop else [400,400] if kind=='people' else [533,400])
+                    assert dimensions(saved['originalImage'])==[600,400]
+
                 upload('places','Park',crop=True)
                 uploaded=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.places[0]}")
                 assert uploaded['image']!=uploaded['originalImage'], 'Upload crop must retain its original'
                 upload('transport','Bus')
+                # Original proportions can restore all of the retained source photo.
+                mobile.get_by_role('button',name='Crop Bus',exact=True).click()
+                expect(mobile.locator('#cropAspect')).to_have_value('1.3333333333')
+                mobile.locator('#cropAspect').select_option('original')
+                mobile.locator('#cropSave').click()
+                expect(mobile.locator('#cropDialog')).not_to_be_visible()
+                bus=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.transport[0]}")
+                assert dimensions(bus['image'])==[600,400]
+
                 for name in ['Drink','Coat','Toy','Headphones']:upload('items',name)
                 upload('people','Person A');upload('people','Person B')
                 # A cancelled edit makes no API write and doesn't change the stored URL.

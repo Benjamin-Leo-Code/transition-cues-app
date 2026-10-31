@@ -164,19 +164,42 @@ $('#pinForm').onsubmit = async e => {
 };
 function renderManage() {
   frame(intro('YOUR FAMILY’S PICTURE LIBRARY','Little pictures. Familiar faces.','Add your own photos, so every journey starts with something familiar.')+
-    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. You can crop before uploading. For people, centre the face inside the circle.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
+    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos are cropped to 4:3 automatically. Use Crop photo to change the shape or framing. People use a square crop shown as a circle.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
   $('#kind').value=category;
   app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{category=b.dataset.tab;renderManage();});
   renderLibrary();
-  let previewUrl, croppedImage = null;
-  $('#kind').onchange=()=>$('#photoPreview').classList.toggle('round', $('#kind').value==='people');
+  let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0;
+  const uploadForm=$('#uploadForm');
+  let wasPerson = $('#kind').value==='people';
+  const defaultCrop=()=>{
+    const current=++revision, file=$('#photo').files[0], circle=$('#kind').value==='people';
+    croppedImage=null;
+    $('#photoPreview').hidden=true; $('#cropUpload').hidden=true;
+    $('#uploadButton').disabled=!!file;
+    $('#uploadError').textContent='';
+    preparing=(async()=>{
+      if(!file)return;
+      try {
+        const image=await preparePhoto(file,circle?1:4/3);
+        if(current!==revision || !document.contains(uploadForm))return;
+        croppedImage=image; $('#photoPreview').src='data:image/jpeg;base64,'+image;
+        $('#photoPreview').hidden=false; $('#cropUpload').hidden=false;
+      } catch(error) { if(current===revision && document.contains(uploadForm))$('#uploadError').textContent=error.message; }
+      finally { if(current===revision && document.contains(uploadForm))$('#uploadButton').disabled=false; }
+    })();
+  };
+  $('#kind').onchange=()=>{
+    const circle=$('#kind').value==='people';
+    $('#photoPreview').classList.toggle('round',circle);
+    if(circle!==wasPerson)defaultCrop();
+    wasPerson=circle;
+  };
   $('#kind').onchange();
   $('#photo').onchange=()=>{
     if(previewUrl) URL.revokeObjectURL(previewUrl);
-    croppedImage = null;
     const file=$('#photo').files[0];
-    $('#photoPreview').hidden=!file; $('#cropUpload').hidden=!file;
-    if(file) {previewUrl=URL.createObjectURL(file); $('#photoPreview').src=previewUrl;}
+    previewUrl=file?URL.createObjectURL(file):null;
+    defaultCrop();
   };
   $('#cropUpload').onclick=async()=>{
     try {
@@ -188,7 +211,7 @@ function renderManage() {
   };
   $('#uploadForm').onsubmit=async e=>{
     e.preventDefault(); const button=$('#uploadButton'); button.disabled=true;button.textContent='Adding picture…'; $('#uploadError').textContent='';
-    try { const kind=$('#kind').value; const image=croppedImage || await preparePhoto($('#photo').files[0]); await api('items',{kind,name:$('#name').value,image,...(croppedImage ? {original:await preparePhoto($('#photo').files[0])} : {})}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
+    try { await preparing; const kind=$('#kind').value; const image=croppedImage || await preparePhoto($('#photo').files[0],kind==='people'?1:4/3); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
     catch(error) { $('#uploadError').textContent=error.message; }
     finally { if(document.contains(button)){button.disabled=false;button.textContent='Add to library ＋';} }
   };
@@ -197,15 +220,22 @@ function validatePhoto(file) {
   if(!file || !['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP photo. HEIC photos need converting first.');
   if(file.size>25*1024*1024) throw new Error('Choose a photo smaller than 25 MB.');
 }
-async function preparePhoto(file) {
+function exportPhoto(img,box) {
+  const scale=Math.min(1,1600/Math.max(box.width,box.height));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(box.width*scale));canvas.height=Math.max(1,Math.round(box.height*scale));
+  const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(img,box.x,box.y,box.width,box.height,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',.9).split(',')[1];
+}
+async function preparePhoto(file,aspect=null) {
   validatePhoto(file);
   const url=URL.createObjectURL(file);
   try {
     const img=new Image();img.src=url;await img.decode();
-    const scale=Math.min(1,1600/Math.max(img.width,img.height));
-    const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
-    const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(img,0,0,canvas.width,canvas.height);
-    return canvas.toDataURL('image/jpeg',.88).split(',')[1];
+    const width=aspect?Math.min(img.width,img.height*aspect):img.width;
+    const height=aspect?width/aspect:img.height;
+    return exportPhoto(img,{x:(img.width-width)/2,y:(img.height-height)/2,width,height});
   } catch { throw new Error('This photo could not be opened. Try another JPEG, PNG or WebP photo.'); }
   finally { URL.revokeObjectURL(url); }
 }
@@ -278,7 +308,7 @@ async function openCrop(source, circle, save) {
   try { await img.decode(); } catch { throw new Error('This photo could not be opened. Try a different photo or refresh the library.'); }
   cropState={img,circle,save,busy:false};
   $('#cropError').textContent='';
-  $('#cropAspect').value=circle?'1':'original'; $('#cropAspect').disabled=circle;
+  $('#cropAspect').value=circle?'1':'1.3333333333'; $('#cropAspect').disabled=circle;
   $('#cropHelp').textContent=circle ? 'Centre the face inside the circle. Drag to move, or use the sliders. The saved photo is square and displays as a circle.' : 'Drag the picture or use the sliders to frame it. Existing pictures are cropped from their saved original.';
   $('#cropCanvas').classList.toggle('round',circle);
   resetCrop(); $('#cropDialog').showModal();
@@ -320,12 +350,7 @@ $('#cropCanvas').onpointermove=e=>{
 $('#cropCanvas').onpointerup=$('#cropCanvas').onpointercancel=()=>{cropDrag=null;};
 $('#cropForm').onsubmit=async e=>{
   e.preventDefault();if(!cropState || cropState.busy)return;
-  const editing=cropState, box=cropRect(), canvas=document.createElement('canvas');
-  const scale=Math.min(1,1600/Math.max(box.width,box.height));
-  canvas.width=Math.max(1,Math.round(box.width*scale));canvas.height=Math.max(1,Math.round(box.height*scale));
-  const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
-  context.drawImage(editing.img,box.x,box.y,box.width,box.height,0,0,canvas.width,canvas.height);
-  const image=canvas.toDataURL('image/jpeg',.9).split(',')[1];
+  const editing=cropState, image=exportPhoto(editing.img,cropRect());
   editing.busy=true; $('#cropError').textContent='';
   const controls=[...$('#cropForm').querySelectorAll('button,input,select')];controls.forEach(control=>control.disabled=true);
   try {await editing.save(image);$('#cropDialog').close();}

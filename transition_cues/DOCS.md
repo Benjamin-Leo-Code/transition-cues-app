@@ -36,7 +36,7 @@ In **Picture library**, select **A place**, **A way to travel**, **An item to br
 
 ## Crop photos
 
-After choosing an upload, tap **Crop photo**, or use **Crop photo** on an existing library picture. Drag the preview, adjust Zoom and the horizontal/vertical sliders, and choose Original proportions, Square, Landscape or Portrait. People use a square crop with a circular preview so you can centre the face. The circular appearance is used in the picker, library and locked display; the underlying image is a normal square JPEG.
+New place, transport and bring-along photos automatically receive a centred 4:3 crop, shown in the upload preview. Tap **Crop photo** to adjust it, or use **Crop photo** on an existing library picture. Drag the preview, adjust Zoom and the horizontal/vertical sliders, and choose Landscape (4:3), Square or Original proportions. Existing library photos stay unchanged until you save a crop. People use a square crop with a circular preview so you can centre the face. The circular appearance is used in the picker, library and locked display; the underlying image is a normal square JPEG.
 
 **Use crop** applies the crop. For new photos, finish with **Add to library**; for existing photos, Use crop saves directly to the library. **Cancel** leaves the picture unchanged. **Reset** recentres the editor and resets its zoom. Photos and retained originals are resized to at most 1600 pixels. Reopening the editor starts from the saved original, allowing you to reframe a previous crop. For an older picture with no saved original, its current image becomes the original on the first crop.
 
