@@ -17,7 +17,7 @@ python3 -m unittest discover -s tests -v
 node --check transition_cues/transition-cues-web/app.js
 ```
 
-For optional browser checks, install Playwright and its Chromium dependency, then run `python3 tests/browser_smoke.py` and `python3 tests/browser_people_crop.py`. The latter checks real crop output pixels, People portraits, and immutable locked journey snapshots. Set `CHROMIUM_PATH` to use a system Chromium. It creates an isolated temporary library, not `/data` or a shared Home Assistant folder.
+For optional browser checks, install Playwright and its Chromium dependency, then run `python3 tests/browser_smoke.py` and `python3 tests/browser_people_crop.py`. The latter checks real crop output pixels, People portraits, and immutable locked journey snapshots. Run `python3 tests/browser_keypad.py` for button-based PIN entry, and add `--browser webkit` with Playwright WebKit installed to check the Safari engine. Real iOS password-manager UI still needs verification on an Apple device. Set `CHROMIUM_PATH` to use a system Chromium. It creates an isolated temporary library, not `/data` or a shared Home Assistant folder.
 
 CI runs the tests and builds the add-on for `linux/amd64` and `linux/arm64` (Home Assistant's `aarch64`). Each job also runs an isolated container check that verifies /data storage and preservation across container replacement. Nothing is pushed to a registry or deployed. A local equivalent is `docker build -t transition-cues-check ./transition_cues` followed by `python3 tests/container_smoke.py --image transition-cues-check`. The smoke check creates and removes only its own temporary containers and volume.
 

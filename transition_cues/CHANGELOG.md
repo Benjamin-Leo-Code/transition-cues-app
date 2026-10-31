@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Replace PIN password fields with an on-screen number pad for setup, unlocking and PIN changes, avoiding Safari's password-creation suggestions.
+- Show masked digits, with clear/backspace controls, confirmation and physical-keyboard support. Keep PINs in memory without hidden form fields.
+- Keep existing PINs, server validation, failed-attempt limits and locked journeys unchanged.
+- Add touch-keypad tests in Chromium and Safari's WebKit engine.
+
 ## 1.0.0
 
 Initial release from this repository, with fresh Git history.

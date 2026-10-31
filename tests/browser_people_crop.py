@@ -24,13 +24,13 @@ def run():
                 page.on('pageerror',lambda e:errors.append(str(e)))
                 url=f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
-                page.locator('#pinInput').fill('1234');page.locator('#pinConfirm').fill('1234');page.locator('#pinSubmit').click()
+                page.locator('#pinInput').press_sequentially('1234');page.locator('#pinConfirm').press_sequentially('1234');page.locator('#pinSubmit').click()
                 expect(page.locator('#start')).to_be_disabled()
                 expect(page.locator('footer')).to_have_count(0)
                 expect(page.get_by_text('Familiar pictures. A little more certainty.',exact=True)).to_have_count(0)
                 phone=browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
                 mobile=phone.new_page();mobile.on('pageerror',lambda e:errors.append(str(e)))
-                mobile.goto(url+'/#manage');mobile.locator('#pinInput').fill('1234');mobile.locator('#pinSubmit').click()
+                mobile.goto(url+'/#manage');mobile.locator('#pinInput').press_sequentially('1234');mobile.locator('#pinSubmit').click()
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Three colour bands make a crop's actual output measurable.
                 png=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');['#d00000','#00b000','#0000d0'].forEach((color,i)=>{x.fillStyle=color;x.fillRect(i*200,0,200,400)});return c.toDataURL('image/png').split(',')[1]}''')
@@ -71,7 +71,7 @@ def run():
                 expect(page.locator('#start')).to_be_enabled();page.locator('#start').click()
                 expect(page.locator('.journey-people')).to_have_count(0)
                 for _ in range(5):page.locator('#lockedSurface h1').click()
-                page.locator('#pinInput').fill('1234');page.locator('#pinSubmit').click()
+                page.locator('#pinInput').press_sequentially('1234');page.locator('#pinSubmit').click()
                 expect(page.locator('#start')).to_be_visible()
                 for name in ['Drink','Coat','Toy','Headphones','Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
                 # People can be toggled independently of the four-item cap.
@@ -121,8 +121,8 @@ def run():
                 expect(mobile.locator('#deleteDialog')).not_to_be_visible()
                 page.reload();expect(page.locator('.person-card')).to_have_count(2)
                 for _ in range(5):page.locator('#lockedSurface h1').click()
-                page.locator('#pinInput').fill('0000');page.locator('#pinSubmit').click();expect(page.locator('#pinError')).to_contain_text('not recognised')
-                page.locator('#pinInput').fill('1234');page.locator('#pinSubmit').click();expect(page.locator('#start')).to_be_visible()
+                page.locator('#pinInput').press_sequentially('0000');page.locator('#pinSubmit').click();expect(page.locator('#pinError')).to_contain_text('not recognised')
+                page.locator('#pinInput').press_sequentially('1234');page.locator('#pinSubmit').click();expect(page.locator('#start')).to_be_visible()
                 # New version can still restore a journey from before the People category existed.
                 page.evaluate("async()=>{const s=await(await fetch('/api/state')).json();localStorage.setItem('tc-locked-journey',JSON.stringify({places:s.places[0],transport:s.transport[0]}))}")
                 page.reload();expect(page.locator('#lockedSurface')).to_be_visible();expect(page.locator('.journey-people')).to_have_count(0)

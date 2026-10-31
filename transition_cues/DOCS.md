@@ -26,7 +26,11 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-Set a shared parent PIN of 4–8 digits on first launch. There is no default PIN. Use this PIN on your phone when opening the library or settings.
+Set a shared parent PIN of 4–8 digits on first launch using the on-screen number pad. Tap **Next**, enter the same digits to confirm, then save. There is no default PIN. Use this PIN on your phone when opening the library or settings.
+
+The PIN controls use buttons and masked dots instead of password fields, so Safari has no editable PIN field to offer a generated password for or open its keyboard against. Use **Clear** to start over or **⌫** to delete the last digit. A physical keyboard also works: type numbers, use Backspace to delete a digit, Delete to clear, and Enter on the selected PIN field to continue. PINs can start with zero and may contain up to eight digits.
+
+To change the PIN in Settings, tap each PIN field (Current PIN, New PIN and Confirm new PIN), then use the same number pad. **Next PIN field** moves to the next entry. Changing this entry interface does not change your existing PIN.
 
 In **Picture library**, select **A place**, **A way to travel**, **An item to bring along**, or **A person**, enter a name, choose a photo and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 

@@ -14,7 +14,7 @@ In Home Assistant:
 4. Find **Transition Cues**, open it and select **Install**. Home Assistant builds the add-on from this repository; the first installation can take a few minutes and requires internet access.
 5. Start it. Enable **Start on boot** and **Watchdog** as desired.
 6. Select **Open Web UI**, or open `http://HOME-ASSISTANT-IP:8099` on your tablet and phone.
-7. Set the parent PIN, then add your familiar photos through **Picture library**.
+7. Set and confirm the parent PIN using the on-screen number pad, then add your familiar photos through **Picture library**.
 
 [Add this repository to Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBenjamin-Leo-Code%2Ftransition-cues-app)
 
@@ -48,6 +48,7 @@ Screenshots use coloured test placeholders, not family photographs:
 - [Locked display with people and bring-along items](docs/screenshots/locked.png)
 - [Phone picture library](docs/screenshots/phone.png)
 - [Photo crop editor](docs/screenshots/crop.png)
+- [PIN number pad](docs/screenshots/keypad.png)
 
 ## Tablet and network
 

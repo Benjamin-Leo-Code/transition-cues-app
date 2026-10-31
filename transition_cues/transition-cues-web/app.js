@@ -75,30 +75,92 @@ function renderLocked() {
     if(taps.length>=5) { taps=[]; showPin('unlock'); }
   };
 }
+// PINs stay in memory; the browser sees buttons and masked dots, not password fields.
+const pinValues = new WeakMap();
+let dialogPad = null;
+function pinValue(id) { return pinValues.get($('#'+id)) || ''; }
+function pinField(id, label) {
+  return `<div><label for="${id}">${label}</label><button id="${id}" type="button" class="pin-entry" data-pin-label="${label}" aria-label="${label}, no digits entered"><span aria-hidden="true">○ ○ ○ ○</span></button></div>`;
+}
+function wirePinPad(form, ids, holder, submit, submitLabel) {
+  const fields = ids.map(id=>$('#'+id));
+  let active=fields[0];
+  holder.innerHTML=`<p class="pin-pad-label" role="status"></p><div class="pin-keypad" role="group" aria-label="PIN number pad">${['1','2','3','4','5','6','7','8','9','clear','0','back'].map(key=>`<button type="button" data-pin-key="${key}" aria-label="${key==='clear'?'Clear PIN':key==='back'?'Delete last digit':key}">${key==='clear'?'Clear':key==='back'?'⌫':key}</button>`).join('')}</div>${ids.length>1 && form.id!=='pinForm'?'<button class="pin-next secondary" type="button">Next PIN field →</button>':''}`;
+  function paint() {
+    const busy=form.dataset.pinBusy==='true';
+    holder.querySelectorAll('button').forEach(button=>button.disabled=busy);
+    if(form.id==='pinForm')$('#pinCancel').disabled=busy;
+    for(const field of fields) {
+      field.disabled=busy;
+      const value=pinValues.get(field)||'';
+      field.innerHTML=`<span aria-hidden="true">${value?'●'.repeat(value.length):'○ ○ ○ ○'}</span>`;
+      field.setAttribute('aria-label',`${field.dataset.pinLabel}, ${value.length} digits entered`);
+      field.setAttribute('aria-pressed',String(field===active));
+      field.classList.toggle('active',field===active);
+    }
+    holder.querySelector('.pin-pad-label').textContent=`${active.dataset.pinLabel} · ${(pinValues.get(active)||'').length} digits entered`;
+    const allValid=fields.every(field=>(pinValues.get(field)||'').length>=4);
+    submit.textContent=submitLabel(active.id);
+    submit.disabled=form.dataset.pinBusy==='true' || (form.id==='pinForm' && pinAction==='setup' && active===fields[0] ? (pinValues.get(active)||'').length<4 : !allValid);
+    const next=holder.querySelector('.pin-next');
+    if(next) next.hidden=active===fields[fields.length-1];
+  }
+  function activate(field,focus=true) { active=field;paint();if(focus)field.focus({preventScroll:true}); }
+  function key(value) {
+    if(form.dataset.pinBusy==='true')return;
+    let pin=pinValues.get(active)||'';
+    if(value==='clear')pin='';
+    else if(value==='back')pin=pin.slice(0,-1);
+    else if(/^[0-9]$/.test(value) && pin.length<8)pin+=value;
+    pinValues.set(active,pin);paint();
+  }
+  for(const field of fields){pinValues.set(field,'');field.onclick=()=>activate(field);field.onfocus=()=>activate(field,false);}
+  holder.onclick=e=>{const button=e.target.closest('[data-pin-key]');if(button)key(button.dataset.pinKey);};
+  form.onkeydown=e=>{
+    if(e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+    if(/^[0-9]$/.test(e.key)){e.preventDefault();key(e.key);}
+    else if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();key(e.key==='Delete'?'clear':'back');}
+    else if(e.key==='Enter' && fields.includes(e.target)){e.preventDefault();if(!submit.disabled)form.requestSubmit(submit);}
+  };
+  const next=holder.querySelector('.pin-next');
+  if(next)next.onclick=()=>activate(fields[Math.min(fields.length-1,fields.indexOf(active)+1)]);
+  paint();
+  return {get activeId(){return active.id;},activate:id=>activate($('#'+id)),clear:()=>{fields.forEach(field=>pinValues.set(field,''));paint();},paint};
+}
+function validPin(id) {
+  const value=pinValue(id);
+  if(!/^[0-9]{4,8}$/.test(value))throw new Error('Enter a PIN of 4 to 8 digits using the number pad.');
+  return value;
+}
 function showPin(action) {
   if ($('#pinDialog').open) return;
   pinAction = action;
   const setup = action === 'setup';
-  $('#pinForm').reset(); $('#pinError').textContent='';
+  $('#pinForm').dataset.pinBusy='false'; $('#pinError').textContent='';
   $('#pinTitle').textContent = setup ? 'A PIN for the grown-ups' : 'Enter your parent PIN';
-  $('#pinHelp').textContent = setup ? 'Choose 4 to 8 digits. Use this PIN to finish a journey and manage pictures on any device.' : 'Your pictures will stay on screen until you unlock.';
-  $('#confirmGroup').hidden = !setup; $('#pinConfirm').required = setup;
-  $('#pinSubmit').textContent = setup ? 'Save PIN & get started' : 'Unlock';
+  $('#pinHelp').textContent = setup ? 'Choose 4 to 8 digits using the number pad, then confirm your PIN.' : 'Use the number pad to unlock. Your pictures will stay on screen until you do.';
+  $('#confirmGroup').hidden = !setup;
   $('#pinCancel').hidden = setup;
+  dialogPad=wirePinPad($('#pinForm'),setup?['pinInput','pinConfirm']:['pinInput'],$('#pinPad'),$('#pinSubmit'),id=>setup?(id==='pinInput'?'Next →':'Save PIN & get started'):'Unlock');
   $('#pinDialog').showModal(); $('#pinInput').focus();
 }
-$('#pinCancel').onclick = () => { $('#pinDialog').close(); if (!locked) location.hash='choose'; };
-$('#pinDialog').addEventListener('cancel', e => { if(pinAction==='setup') e.preventDefault(); else if(!locked) location.hash='choose'; });
+$('#pinCancel').onclick = () => { if($('#pinForm').dataset.pinBusy==='true')return; $('#pinDialog').close(); if (!locked) location.hash='choose'; };
+$('#pinDialog').addEventListener('cancel', e => { if(pinAction==='setup' || $('#pinForm').dataset.pinBusy==='true') e.preventDefault(); else if(!locked) location.hash='choose'; });
+$('#pinDialog').addEventListener('close',()=>dialogPad?.clear());
 $('#pinForm').onsubmit = async e => {
-  e.preventDefault(); const button=$('#pinSubmit'); button.disabled=true; $('#pinError').textContent='';
+  e.preventDefault(); const form=$('#pinForm');
+  if(form.dataset.pinBusy==='true')return;
+  $('#pinError').textContent='';
   try {
-    const pin=$('#pinInput').value;
-    if(pinAction==='setup' && pin!==$('#pinConfirm').value) throw new Error('The PINs do not match. Please try again.');
+    const pin=validPin('pinInput');
+    if(pinAction==='setup' && dialogPad.activeId==='pinInput') { dialogPad.activate('pinConfirm');return; }
+    if(pinAction==='setup' && pin!==validPin('pinConfirm')) throw new Error('The PINs do not match. Please try again.');
+    form.dataset.pinBusy='true';dialogPad.paint();
     await api(pinAction==='setup'?'setup':'unlock',{pin});
     if(locked) { localStorage.removeItem('tc-locked-journey'); locked=null; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }
     $('#pinDialog').close(); await refresh(); await route();
-  } catch(error) { $('#pinError').textContent=error.message; $('#pinInput').value=''; $('#pinInput').focus(); }
-  finally { button.disabled=false; }
+  } catch(error) { $('#pinError').textContent=error.message; form.dataset.pinBusy='false'; dialogPad.clear();dialogPad.activate('pinInput'); }
+  finally { form.dataset.pinBusy='false';dialogPad.paint(); }
 };
 function renderManage() {
   frame(intro('YOUR FAMILY’S PICTURE LIBRARY','Little pictures. Familiar faces.','Add your own photos, so every journey starts with something familiar.')+
@@ -164,9 +226,22 @@ function renderLibrary() {
 $('#deleteCancel').onclick=()=>$('#deleteDialog').close();
 $('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage();toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
 function renderSettings() {
-  frame(intro('MAKE YOURSELF AT HOME','A few things for the grown-ups.','Keep your parent PIN and your return link up to date.')+`<div class="settings-grid"><section class="panel"><h2>Parent PIN</h2><p>Use the same PIN on the tablet and your phone.</p><form id="changePinForm"><div><label for="oldPin">Current PIN</label><input id="oldPin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" required autocomplete="off"></div><div><label for="newPin">New PIN · 4 to 8 digits</label><input id="newPin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" required autocomplete="off"></div><div><label for="newPinConfirm">Confirm new PIN</label><input id="newPinConfirm" type="password" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" required autocomplete="off"></div><button class="primary">Change PIN</button><p class="error" id="changeError" role="alert"></p></form></section><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section><section class="panel wide"><h2>On the tablet</h2><p>Choose a place, transport and up to four optional items to bring along, plus any people joining you, then tap “Show the plan”. To finish, tap the picture screen five times within four seconds and enter your PIN. Cancelling the PIN prompt keeps the journey locked.</p><p>Use the tablet’s kiosk mode or guided access to prevent leaving the browser. Keep Transition Cues open in its own browser tab rather than embedding it inside another page.</p><p class="help">To manage pictures from your phone, open this app’s address and choose Picture library. Both devices must reach the same server. Your pictures stay on your home server.</p></section></div>`, 'settings');
+  frame(intro('MAKE YOURSELF AT HOME','A few things for the grown-ups.','Keep your parent PIN and your return link up to date.')+`<div class="settings-grid"><section class="panel"><h2>Parent PIN</h2><p>Use the same PIN on the tablet and your phone.</p><form id="changePinForm">${pinField('oldPin','Current PIN')}${pinField('newPin','New PIN · 4 to 8 digits')}${pinField('newPinConfirm','Confirm new PIN')}<div id="settingsPinPad"></div><button class="primary" id="changePinSubmit">Change PIN</button><p class="error" id="changeError" role="alert"></p></form></section><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section><section class="panel wide"><h2>On the tablet</h2><p>Choose a place, transport and up to four optional items to bring along, plus any people joining you, then tap “Show the plan”. To finish, tap the picture screen five times within four seconds and enter your PIN. Cancelling the PIN prompt keeps the journey locked.</p><p>Use the tablet’s kiosk mode or guided access to prevent leaving the browser. Keep Transition Cues open in its own browser tab rather than embedding it inside another page.</p><p class="help">To manage pictures from your phone, open this app’s address and choose Picture library. Both devices must reach the same server. Your pictures stay on your home server.</p></section></div>`, 'settings');
   $('#returnForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('settings',{returnUrl:$('#returnUrl').value.trim()});await refresh();renderSettings();toast('Return link saved.');}catch(error){$('#returnError').textContent=error.message;}finally{b.disabled=false;}};
-  $('#changePinForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{if($('#newPin').value!==$('#newPinConfirm').value)throw new Error('The new PINs do not match.');await api('pin',{currentPin:$('#oldPin').value,pin:$('#newPin').value});await refresh();renderSettings();toast('PIN changed. Other devices will need the new PIN.');}catch(error){$('#changeError').textContent=error.message;}finally{b.disabled=false;}};
+  const changeForm=$('#changePinForm');
+  const settingsPad=wirePinPad(changeForm,['oldPin','newPin','newPinConfirm'],$('#settingsPinPad'),$('#changePinSubmit'),()=> 'Change PIN');
+  changeForm.onsubmit=async e=>{
+    e.preventDefault();if(changeForm.dataset.pinBusy==='true')return;
+    $('#changeError').textContent='';
+    try {
+      const currentPin=validPin('oldPin'), pin=validPin('newPin');
+      if(pin!==validPin('newPinConfirm'))throw new Error('The new PINs do not match.');
+      changeForm.dataset.pinBusy='true';settingsPad.paint();
+      await api('pin',{currentPin,pin});await refresh();renderSettings();toast('PIN changed. Other devices will need the new PIN.');
+    }catch(error){$('#changeError').textContent=error.message;changeForm.dataset.pinBusy='false';settingsPad.clear();settingsPad.activate('oldPin');}
+    finally{changeForm.dataset.pinBusy='false';settingsPad.paint();}
+  };
+
 }
 async function route() {
   if(locked){renderLocked();return;}

@@ -9,8 +9,8 @@
 <div id="app"><p class="loading" role="status">Opening Transition Cues…</p></div>
 <dialog id="pinDialog" aria-labelledby="pinTitle">
 <form id="pinForm"><span class="eyebrow">PARENTS ONLY</span><h2 id="pinTitle">Enter your PIN</h2><p id="pinHelp">Enter your parent PIN to continue.</p>
-<label for="pinInput">Parent PIN</label><input id="pinInput" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="off" required>
-<div id="confirmGroup" hidden><label for="pinConfirm">Confirm PIN</label><input id="pinConfirm" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+<label for="pinInput">Parent PIN</label><button id="pinInput" type="button" class="pin-entry" data-pin-label="Parent PIN" aria-label="Parent PIN, no digits entered"><span aria-hidden="true">○ ○ ○ ○</span></button>
+<div id="confirmGroup" hidden><label for="pinConfirm">Confirm PIN</label><button id="pinConfirm" type="button" class="pin-entry" data-pin-label="Confirm PIN" aria-label="Confirm PIN, no digits entered"><span aria-hidden="true">○ ○ ○ ○</span></button></div><div id="pinPad"></div>
 <p id="pinError" class="error" role="alert"></p><div class="dialog-actions"><button id="pinCancel" type="button" class="secondary">Cancel</button><button type="submit" class="primary" id="pinSubmit">Unlock</button></div></form>
 </dialog>
 <dialog id="deleteDialog" aria-labelledby="deleteTitle"><form id="deleteForm"><span class="eyebrow">PICTURE LIBRARY</span><h2 id="deleteTitle">Remove this picture?</h2><p id="deleteText"></p><div class="dialog-actions"><button type="button" class="secondary" id="deleteCancel">Keep picture</button><button type="submit" class="danger">Remove</button></div></form></dialog>
