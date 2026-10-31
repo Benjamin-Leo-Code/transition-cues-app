@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.8
+
+- Remove Places and Transport totals from the journey picker.
+- Move Back to plan to the left, in the logo position on Library and Settings pages.
+- Replace the upload category dropdown with labelled Place, Transport, Items and People icons.
+
 ## 1.0.7
 
 - Show the journey in landscape, with a Turn your device prompt in portrait. Put People and bring-along items side by side.

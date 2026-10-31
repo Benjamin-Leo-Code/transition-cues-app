@@ -38,7 +38,7 @@ def run(engine):
                 def dimensions(src):
                     return mobile.evaluate('''async src=>{const i=new Image();i.src=src;await i.decode();return [i.width,i.height]}''',src)
                 def upload(kind,name,crop=False):
-                    mobile.locator('#kind').select_option(kind);mobile.locator('#name').fill(name)
+                    mobile.get_by_role('radio',name={'places':'Place','transport':'Transport','items':'Items','people':'People'}[kind],exact=True).check();mobile.locator('#name').fill(name)
                     mobile.locator('#photo').set_input_files({'name':'test.png','mimeType':'image/png','buffer':base64.b64decode(png)})
                     expect(mobile.locator('#photoPreview')).to_be_visible()
                     preview=mobile.locator('#photoPreview').get_attribute('src')
@@ -90,7 +90,7 @@ def run(engine):
                 assert pixel(bus['image'],580,300)[2]>180  # Original right edge still visible.
                 # Full and partial transparency must enable the picker even without zooming out.
                 transparent=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');x.fillStyle='#d00000';x.fillRect(0,0,200,400);x.fillStyle='rgba(255,255,255,.5)';x.fillRect(200,0,200,400);return c.toDataURL('image/png').split(',')[1]}''')
-                mobile.locator('#kind').select_option('places');mobile.locator('#name').fill('Transparent symbol')
+                mobile.get_by_role('radio',name='Place',exact=True).check();mobile.locator('#name').fill('Transparent symbol')
                 mobile.locator('#photo').set_input_files({'name':'transparent.png','mimeType':'image/png','buffer':base64.b64decode(transparent)})
                 mobile.locator('#cropUpload').click()
                 expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()

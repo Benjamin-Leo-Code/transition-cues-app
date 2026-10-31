@@ -19,7 +19,7 @@ function frame(content, route) {
   document.body.classList.remove('lock-active');
   const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
   const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
-  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>Transition Cues</span></a>':''}<nav class="nav" aria-label="Main navigation">${[['manage','Picture library',libraryIcon],['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}${route!=='choose'?'<a class="back-plan secondary" href="#choose"><span aria-hidden="true">←</span> Back to plan</a>':''}</nav>${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
+  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>Transition Cues</span></a>':'<a class="back-plan secondary" href="#choose"><span aria-hidden="true">←</span> Back to plan</a>'}<nav class="nav" aria-label="Main navigation">${[['manage','Picture library',libraryIcon],['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
 }
 function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1><p>${description}</p></div>${extra}</div>`; }
 
@@ -40,7 +40,7 @@ function renderChoose() {
   frame(intro('Where are we going?', 'Choose a place, how you’ll get there, and anything to bring along.', '<span class="pill">A moment of calm before you go</span>') +
     ['places','transport','items','people'].map((kind,i)=>{
       const multi = kind==='items' || kind==='people';
-      return `<section class="step" aria-labelledby="${kind}Heading"><div class="step-heading"><h2 id="${kind}Heading"><span class="step-number">${i+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][i]}</h2><small ${multi?`id="${kind==='items'?'itemCount':'peopleCount'}" role="status"`:''}>${multi ? (kind==='items' ? `${selected.items.length} of ${MAX_BRING_ITEMS} selected · optional` : `${selected.people.length} selected · optional`) : `${state[kind].length} ${kind==='places'?'places':'ways to travel'}`}</small></div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${state[kind].length ? `<div class="grid">${state[kind].map(x=>{
+      return `<section class="step" aria-labelledby="${kind}Heading"><div class="step-heading"><h2 id="${kind}Heading"><span class="step-number">${i+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][i]}</h2>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items' ? `${selected.items.length} of ${MAX_BRING_ITEMS} selected · optional` : `${selected.people.length} selected · optional`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${state[kind].length ? `<div class="grid">${state[kind].map(x=>{
         const active = multi ? selected[kind].some(item=>item.id===x.id) : selected[kind]?.id===x.id;
         const atLimit = kind==='items' && !active && selected.items.length>=MAX_BRING_ITEMS;
         return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${x.id}" aria-pressed="${active}" ${atLimit?'disabled':''}><img src="${esc(x.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(x.name)}</span></button>`;
@@ -103,15 +103,21 @@ function renderLocked() {
     if(taps.length>=5)finishJourney();
   };
 }
+const uploadCategories = [
+  ['places','Place','<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'],
+  ['transport','Transport','<rect x="5" y="3" width="14" height="15" rx="3"/><path d="M5 11h14M12 3v8M8 18l-3 4m11-4 3 4M8 21h8"/><circle cx="8.5" cy="14.5" r=".8"/><circle cx="15.5" cy="14.5" r=".8"/>'],
+  ['items','Items','<circle cx="6.5" cy="5" r="3"/><circle cx="17.5" cy="5" r="3"/><ellipse cx="12" cy="18" rx="5" ry="4"/><circle cx="7" cy="20" r="2.5"/><circle cx="17" cy="20" r="2.5"/><circle cx="12" cy="10" r="6"/><ellipse cx="12" cy="12" rx="2" ry="1.5"/><path d="M9 9h.01M15 9h.01"/>'],
+  ['people','People','<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/>']
+];
 function renderManage() {
   frame(intro('Little pictures. Familiar faces.','Add your own photos, so every journey starts with something familiar.')+
-    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
-  $('#kind').value=category;
+    `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${uploadCategories.map(([kind,label,icon])=>`<label class="kind-choice"><input type="radio" name="kind" value="${kind}" ${kind===category?'checked':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span></label>`).join('')}</div></fieldset><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
+  const uploadKind=()=>$('#uploadForm input[name="kind"]:checked').value;
   app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{category=b.dataset.tab;renderManage();});
   renderLibrary();
   let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0;
   const uploadForm=$('#uploadForm');
-  let wasPerson = $('#kind').value==='people';
+  let wasPerson = uploadKind()==='people';
   const defaultCrop=()=>{
     const current=++revision, file=$('#photo').files[0];
     croppedImage=null;
@@ -129,13 +135,14 @@ function renderManage() {
       finally { if(current===revision && document.contains(uploadForm))$('#uploadButton').disabled=false; }
     })();
   };
-  $('#kind').onchange=()=>{
-    const circle=$('#kind').value==='people';
+  const updateUploadKind=()=>{
+    const circle=uploadKind()==='people';
     $('#photoPreview').classList.toggle('round',circle);
     if(circle!==wasPerson)defaultCrop();
     wasPerson=circle;
   };
-  $('#kind').onchange();
+  app.querySelectorAll('input[name="kind"]').forEach(input=>input.onchange=updateUploadKind);
+  updateUploadKind();
   $('#photo').onchange=()=>{
     if(previewUrl) URL.revokeObjectURL(previewUrl);
     const file=$('#photo').files[0];
@@ -145,14 +152,14 @@ function renderManage() {
   $('#cropUpload').onclick=async()=>{
     try {
       const file=$('#photo').files[0]; validatePhoto(file);
-      await openCrop(previewUrl, $('#kind').value==='people', async image=>{
+      await openCrop(previewUrl, uploadKind()==='people', async image=>{
         croppedImage=image; $('#photoPreview').src='data:image/jpeg;base64,'+image;
       });
     } catch(error) { $('#uploadError').textContent=error.message; }
   };
   $('#uploadForm').onsubmit=async e=>{
     e.preventDefault(); const button=$('#uploadButton'); button.disabled=true;button.textContent='Adding picture…'; $('#uploadError').textContent='';
-    try { await preparing; const kind=$('#kind').value; const image=croppedImage || await preparePhoto($('#photo').files[0],1); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
+    try { await preparing; const kind=uploadKind(); const image=croppedImage || await preparePhoto($('#photo').files[0],1); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
     catch(error) { $('#uploadError').textContent=error.message; }
     finally { if(document.contains(button)){button.disabled=false;button.textContent='Add to library ＋';} }
   };

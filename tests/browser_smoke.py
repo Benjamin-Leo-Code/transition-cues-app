@@ -39,7 +39,7 @@ def run():
                 # Test images are generated within the browser, never shipped in the real library.
                 for kind, name, color in [('places','Park','#9caf88'),('transport','Bus','#ddbd86'),('items','Drink','#a8c5d6'),('items','Headphones','#c5b5d3'),('items','Coat','#d7b4a2'),('items','Toy','#c0cdaa'),('items','Bag','#e0d1a2')]:
                     png = mobile.evaluate('''([name,color]) => {const c=document.createElement('canvas');c.width=500;c.height=320;const x=c.getContext('2d');x.fillStyle=color;x.fillRect(0,0,500,320);x.fillStyle='#254d43';x.font='32px sans-serif';x.textAlign='center';x.fillText(name,250,170);return c.toDataURL('image/png').split(',')[1];}''', [name,color])
-                    mobile.locator('#kind').select_option(kind)
+                    mobile.get_by_role('radio',name={'places':'Place','transport':'Transport','items':'Items','people':'People'}[kind],exact=True).check()
                     mobile.locator('#name').fill(name)
                     mobile.locator('#photo').set_input_files({'name':name+'.png','mimeType':'image/png','buffer':base64.b64decode(png)})
                     mobile.locator('#uploadButton').click()

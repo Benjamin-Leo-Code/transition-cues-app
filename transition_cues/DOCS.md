@@ -26,11 +26,11 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-Use the picture icon at the top right for **Picture library**, and the gear icon for **Settings**. Both have accessible labels and tooltips. On those pages, use **← Back to plan** at the top right to return to journey selection.
+Use the picture icon at the top right for **Picture library**, and the gear icon for **Settings**. Both have accessible labels and tooltips. On those pages, use **← Back to plan** at the top left to return to journey selection.
 
 No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
 
-In **Picture library**, select **A place**, **A way to travel**, **An item to bring along**, or **A person**, enter a name, choose a photo and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
+In **Picture library**, choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon, enter a name, choose a photo and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
 ## Crop photos
 
