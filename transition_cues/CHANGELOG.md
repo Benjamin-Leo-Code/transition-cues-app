@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Move the lock instructions into a splash screen between Show the plan and the locked journey.
+- Add a Continue button, Back to choices, and a Don’t show this again checkbox remembered in the current browser on this device.
+
 ## 1.0.2
 
 - Automatically apply a centred 4:3 crop to new place, transport and bring-along photos, with a matching upload preview. People use a square crop for circular portraits.

@@ -26,6 +26,8 @@ Choose a place and transport, optionally select up to four bring-along items and
 
 On a phone, open the same server address and choose **Picture library** to upload, name, browse and remove pictures in all four categories. Use **Crop photo** before uploading or beside an existing library picture to frame the image. People have a circular preview; drag, zoom or use the position sliders to centre each face. Use Settings to change the PIN or add a **Back to main screen** link in the parent-screen navigation. The return link can point to a dashboard or another application.
 
+After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
+
 ## Moving from another installation
 
 This repository starts at **v1.0.0** with the full current feature set and fresh Git history. Home Assistant treats an add-on from a different repository as a separate installation. Back up the old add-on and keep its data before removing anything; data is not copied automatically. Stop an old installation using port 8099 before starting this one, or choose a different host port. See the setup guide for details.
@@ -41,6 +43,8 @@ The browser stores only the current locked journey snapshot locally. Uploaded ph
 [Full setup, updates, backups and troubleshooting](transition_cues/DOCS.md) · [Changelog](transition_cues/CHANGELOG.md) · [Maintainer guide](DEVELOPMENT.md)
 
 ## Screenshots
+
+[Pre-lock splash screen](docs/screenshots/splash.png)
 
 Screenshots use coloured test placeholders, not family photographs:
 

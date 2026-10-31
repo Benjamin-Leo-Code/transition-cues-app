@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pinAction = null, pendingDelete = null;
-let toastTimer;
+let toastTimer, pendingJourney = null;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
   let response;
@@ -43,7 +43,7 @@ function renderChoose() {
         return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${x.id}" aria-pressed="${active}" ${atLimit?'disabled':''}><img src="${esc(x.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(x.name)}</span></button>`;
       }).join('')}</div>` : empty(kind)}</section>`;
     }).join('')+
-    `<div class="journey-bar"><div><strong>${selected.places && selected.transport ? `${esc(selected.places.name)} · ${esc(selected.transport.name)}${selected.items.length ? ` · ${selected.items.length} to bring` : ''}` : 'A clear plan, ready when you are'}</strong><p>The display locks when you start. Tap 5 times, then enter your PIN to finish.</p></div><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`, 'choose');
+    `<div class="journey-bar"><div><strong>${selected.places && selected.transport ? `${esc(selected.places.name)} · ${esc(selected.transport.name)}${selected.items.length ? ` · ${selected.items.length} to bring` : ''}` : 'Choose a place and transport to continue'}</strong></div><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`, 'choose');
   app.querySelectorAll('[data-kind]').forEach(button => button.onclick = () => {
     const {kind,id} = button.dataset;
     const item = state[kind].find(x=>x.id===id);
@@ -56,14 +56,30 @@ function renderChoose() {
     app.querySelector(`[data-kind="${kind}"][data-id="${id}"]`)?.focus({preventScroll:true});
   });
   $('#start').onclick = () => {
-    const journey = {places:selected.places, transport:selected.transport, items:selected.items.slice(0,MAX_BRING_ITEMS), people:[...selected.people]};
-    try { localStorage.setItem('tc-locked-journey', JSON.stringify(journey)); }
-    catch { toast('Allow browser storage so the locked display can survive a refresh.'); return; }
-    locked = journey; taps = []; renderLocked();
-    document.documentElement.requestFullscreen?.().catch(()=>{});
-    if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+    pendingJourney = {places:selected.places, transport:selected.transport, items:selected.items.slice(0,MAX_BRING_ITEMS), people:[...selected.people]};
+    let skip=false;
+    try { skip=localStorage.getItem('tc-skip-plan-intro')==='true'; } catch {}
+    if(skip)beginJourney();
+    else { $('#skipPlanIntro').checked=false; $('#planDialog').showModal(); }
   };
 }
+function beginJourney() {
+  if(!pendingJourney)return;
+  try { localStorage.setItem('tc-locked-journey', JSON.stringify(pendingJourney)); }
+  catch { toast('Allow browser storage so the locked display can survive a refresh.'); return; }
+  if($('#planDialog').open && $('#skipPlanIntro').checked) {
+    try { localStorage.setItem('tc-skip-plan-intro','true'); }
+    catch { toast('Your plan can start, but this browser could not remember the splash screen setting.'); }
+  }
+  locked=pendingJourney; pendingJourney=null; taps=[];
+  $('#planDialog').close(); renderLocked();
+  document.documentElement.requestFullscreen?.().catch(()=>{});
+  if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+}
+$('#planForm').onsubmit=e=>{e.preventDefault();beginJourney();};
+$('#planBack').onclick=()=>$('#planDialog').close();
+$('#planDialog').addEventListener('close',()=>{pendingJourney=null;});
+
 function renderLocked() {
   document.body.classList.add('lock-active');
   const items = locked.items || [];
@@ -274,6 +290,7 @@ function renderSettings() {
 
 }
 async function route() {
+  if($('#planDialog').open)$('#planDialog').close();
   if(locked){renderLocked();return;}
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
   if(state.setupRequired){renderChoose();showPin('setup');return;}
@@ -282,7 +299,7 @@ async function route() {
 }
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#pinDialog').open&&!$('#deleteDialog').open&&!$('#cropDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#pinDialog').open&&!$('#deleteDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
 async function start() {
   try {
     const saved=localStorage.getItem('tc-locked-journey');

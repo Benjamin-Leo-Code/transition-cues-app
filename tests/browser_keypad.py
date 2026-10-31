@@ -8,6 +8,7 @@ import threading
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
+from browser_helpers import show_plan
 
 
 def run(engine):
@@ -53,7 +54,7 @@ def run(engine):
                 expect(page.locator('#pinInput')).to_have_attribute('aria-label','Parent PIN, 0 digits entered')
                 # Add a tiny temporary fixture through the same authenticated API.
                 page.evaluate("""async()=>{const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';for(const [kind,name] of [['places','Park'],['transport','Bus']])await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})})}""")
-                page.reload();page.get_by_role('button',name='Park',exact=True).tap();page.get_by_role('button',name='Bus',exact=True).tap();page.locator('#start').tap()
+                page.reload();page.get_by_role('button',name='Park',exact=True).tap();page.get_by_role('button',name='Bus',exact=True).tap();show_plan(page)
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 for _ in range(5):page.locator('#lockedSurface h1').tap()
                 expect(page.locator('#pinDialog')).to_be_visible()

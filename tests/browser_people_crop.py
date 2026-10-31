@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, type_pin
+from browser_helpers import track_fullscreen, leave_fullscreen, type_pin, show_plan
 
 
 def run():
@@ -89,7 +89,7 @@ def run():
                 assert get_person()['image']==old_image
                 page.reload();page.get_by_role('button',name='Park',exact=True).click();page.get_by_role('button',name='Bus',exact=True).click()
                 # Neither People nor bring-along items is required.
-                expect(page.locator('#start')).to_be_enabled();page.locator('#start').click()
+                expect(page.locator('#start')).to_be_enabled();show_plan(page)
                 expect(page.locator('.journey-people')).to_have_count(0)
                 for _ in range(5):page.locator('#lockedSurface h1').click()
                 type_pin(page, '#pinInput', '1234');page.locator('#pinSubmit').click()
@@ -100,7 +100,7 @@ def run():
                 expect(page.locator('#peopleCount')).to_contain_text('1 selected')
                 page.get_by_role('button',name='Person B',exact=True).click()
                 page.screenshot(path='/tmp/transition-cues-picker.png',full_page=True)
-                page.locator('#start').click();expect(page.locator('.person-card')).to_have_count(2)
+                show_plan(page);expect(page.locator('.person-card')).to_have_count(2)
                 assert page.locator('.person-card img').first.evaluate("img=>getComputedStyle(img).borderRadius==='50%'")
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
                 # Exit browser fullscreen only; the application's PIN lock must remain active.

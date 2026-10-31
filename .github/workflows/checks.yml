@@ -47,6 +47,7 @@ jobs:
       - run: python tests/browser_smoke.py
       - run: python tests/browser_people_crop.py
       - run: python tests/browser_keypad.py
+      - run: python tests/browser_splash.py
   safari-engine-test:
     needs: test
     runs-on: ubuntu-latest
@@ -58,3 +59,4 @@ jobs:
       - run: python -m pip install playwright
       - run: python -m playwright install --with-deps webkit
       - run: python tests/browser_keypad.py --browser webkit
+      - run: python tests/browser_splash.py --browser webkit

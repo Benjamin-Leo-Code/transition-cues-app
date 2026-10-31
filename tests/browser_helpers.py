@@ -33,3 +33,8 @@ def type_pin(page, selector, digits):
     field.click()
     page.keyboard.press('Delete')
     page.keyboard.type(digits)
+
+
+def show_plan(page):
+    page.locator('#start').click()
+    page.locator('#planContinue').click()

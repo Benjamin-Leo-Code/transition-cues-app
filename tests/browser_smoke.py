@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, type_pin
+from browser_helpers import track_fullscreen, leave_fullscreen, type_pin, show_plan
 
 
 def run():
@@ -58,7 +58,7 @@ def run():
                 page.get_by_role('button', name='Bus').click()
                 # Bring-along items are optional; old saved journeys still restore.
                 expect(page.locator('#start')).to_be_enabled()
-                page.locator('#start').click()
+                show_plan(page)
                 expect(page.locator('.bring-items')).to_have_count(0)
                 page.evaluate("const j=JSON.parse(localStorage.getItem('tc-locked-journey'));delete j.items;localStorage.setItem('tc-locked-journey',JSON.stringify(j));")
                 page.reload()
@@ -82,7 +82,7 @@ def run():
                 page.get_by_role('button', name='Bag', exact=True).click()
                 page.get_by_role('button', name='Headphones', exact=True).click()
                 page.screenshot(path='/tmp/transition-cues-picker.png', full_page=True)
-                page.locator('#start').click()
+                show_plan(page)
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 expect(page.locator('nav')).to_have_count(0)
                 expect(page.locator('.bring-card')).to_have_count(4)

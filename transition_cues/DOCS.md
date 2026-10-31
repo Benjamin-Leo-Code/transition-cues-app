@@ -50,6 +50,8 @@ The place and transport appear first, then circular photos and names of selected
 
 Use tablet kiosk mode or Guided Access to prevent browser/OS navigation and disable sleep as needed. Fullscreen and keeping the screen awake depend on the browser. Keep the app in its own browser tab; ingress/sidebar embedding is not provided.
 
+After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
+
 ## Return link
 
 In Settings, enter the full main-screen address under **Back to main screen**. The return link appears in the navigation on parent screens after unlocking; there is no footer. When ready, add a link from the main tablet app to `http://HOME-ASSISTANT-IP:8099`. The return link does not modify the linked application.

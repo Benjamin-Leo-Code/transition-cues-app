@@ -7,6 +7,9 @@
 </head>
 <body>
 <div id="app"><p class="loading" role="status">Opening Transition Cues…</p></div>
+<dialog id="planDialog" aria-labelledby="planTitle" aria-describedby="planHelp">
+<form id="planForm"><span class="eyebrow">READY TO GO</span><h1 id="planTitle">A clear plan, ready when you are</h1><p id="planHelp">The display locks when you start. Tap 5 times within 4 seconds, then enter your PIN to finish.</p><label class="remember-choice" for="skipPlanIntro"><input id="skipPlanIntro" type="checkbox">Don’t show this again</label><p class="help">Remembers your choice in this browser on this device.</p><div class="dialog-actions"><button id="planBack" type="button" class="secondary">Back to choices</button><button id="planContinue" type="submit" class="primary">Continue to the plan →</button></div></form>
+</dialog>
 <dialog id="pinDialog" aria-labelledby="pinTitle">
 <form id="pinForm"><span class="eyebrow">PARENTS ONLY</span><h2 id="pinTitle">Enter your PIN</h2><p id="pinHelp">Enter your parent PIN to continue.</p>
 <label for="pinInput">Parent PIN</label><button id="pinInput" type="button" class="pin-entry" data-pin-label="Parent PIN" aria-label="Parent PIN, no digits entered"><span aria-hidden="true">○ ○ ○ ○</span></button>
