@@ -22,17 +22,13 @@ This is a fresh repository with an initial version of **1.0.0**, containing the 
 
 Before replacing an existing installation, create a Home Assistant backup including the old add-on. Keep it installed until any photos/settings you want have been migrated and checked; uninstalling removes its private data. Backing up the old add-on does not automatically import its data into this new one. There is no built-in export/import or automatic cross-repository migration at present.
 
-If you are starting with an empty library, stop the old add-on, install and start the new one, and set a new parent PIN. Both default to host port 8099, so stop the old one before starting the new one or configure a different host port. You can keep the stopped old installation while verifying the new one.
+If you are starting with an empty library, stop the old add-on, install and start the new one, and add your familiar photos. Both default to host port 8099, so stop the old one before starting the new one or configure a different host port. You can keep the stopped old installation while verifying the new one.
 
 ## First launch and pictures
 
 Use the picture icon at the top right for **Picture library**, and the gear icon for **Settings**. Both have accessible labels and tooltips. On those pages, use **← Back to plan** at the top right to return to journey selection.
 
-Set a shared parent PIN of 4–8 digits on first launch using the on-screen number pad. Tap **Next**, enter the same digits to confirm, then save. There is no default PIN. Use this PIN on your phone when opening the library or settings.
-
-The PIN controls use buttons and masked dots instead of password fields, so Safari has no editable PIN field to offer a generated password for or open its keyboard against. Use **Clear** to start over or **⌫** to delete the last digit. A physical keyboard also works: type numbers, use Backspace to delete a digit, Delete to clear, and Enter on the selected PIN field to continue. PINs can start with zero and may contain up to eight digits.
-
-To change the PIN in Settings, tap each PIN field (Current PIN, New PIN and Confirm new PIN), then use the same number pad. **Next PIN field** moves to the next entry. Changing this entry interface does not change your existing PIN.
+No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
 
 In **Picture library**, select **A place**, **A way to travel**, **An item to bring along**, or **A person**, enter a name, choose a photo and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
@@ -52,7 +48,9 @@ Crops keep the existing picture's name and category. Images on an already-locked
 
 Choose one place and one transport picture. Optionally select zero to four items; tap a selected item to deselect it. Select any people coming along, or leave People empty. People has no four-person cap. Tap **Show the plan**.
 
-The place and transport appear first, then circular photos and names of selected people, followed by bring-along items. With larger groups or a small screen, the locked display can scroll to keep every person and item accessible. Five taps within four seconds reveal the parent PIN prompt. Cancelling or entering the wrong PIN keeps the journey locked. Refreshing restores it, including the selected items and people, in the same browser and at the same server address. Different hostnames/ports have separate browser storage.
+The journey appears only in landscape. In portrait, a **Turn your device** prompt appears; rotate the device to see the same saved journey. Destination and transport photos stay aligned, with **To:** and **By:** beside their names. Long names expand downward. People and bring-along items appear in groups beside each other below the main photos; larger groups may wrap and the display can scroll.
+
+Tap the display five times within three seconds to return directly to the plan choices. There is no PIN prompt. Fewer taps, or taps spread over longer than three seconds, keep the plan on screen. Refreshing restores the journey, including its selected photos, in the same browser and at the same server address. Different hostnames/ports have separate browser storage.
 
 Use tablet kiosk mode or Guided Access to prevent browser/OS navigation and disable sleep as needed. Fullscreen and keeping the screen awake depend on the browser. Keep the app in its own browser tab; ingress/sidebar embedding is not provided.
 
@@ -77,7 +75,7 @@ Inside the add-on:
 ```text
 /app/transition-cues-web/           application files replaced by updates
 /data/transition-cues-data/
-  library.json                     names, image references, return URL, PIN hash
+  library.json                     names, image references, return URL
   images/                          uploaded pictures
 ```
 
@@ -89,13 +87,9 @@ Removed pictures are hidden from the library but their files are retained, so a 
 
 The previous experimental shared-folder setup is no longer supported. Automatic import from an older `/share` installation is not provided.
 
-## PIN and access
+## Access
 
-Change the PIN in Settings using the current PIN. Other devices need the new PIN after a change. Parent sessions expire after 12 hours or a restart; a locked journey always requires PIN entry to finish. Five failed attempts in a minute temporarily block further PIN attempts from that IP address.
-
-If the PIN is forgotten, preserve a backup and seek administrator recovery rather than uninstalling. A maintenance-only `reset_pin.py` utility is included in the add-on image for an administrator with host/container access. Stop the running service and back up its data before using it against the library; it prompts for a new PIN without displaying it. This is not an extra deployment method or a standard Home Assistant Terminal command.
-
-All devices that can reach the LAN port can view the picture library/images; editing requires the PIN. Keep it on your trusted LAN. For access away from home, use your trusted VPN. Home Assistant login does not automatically protect this direct LAN port.
+All devices that can reach the LAN port can view and edit the picture library and settings. There is no PIN or account login. Keep the app on your trusted home network; do not forward its port to the internet. For access away from home, use your trusted VPN. Home Assistant login does not automatically protect this direct LAN port.
 
 ## Troubleshooting
 

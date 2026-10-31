@@ -8,7 +8,6 @@ import threading
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import type_pin
 
 
 def run(engine):
@@ -25,15 +24,12 @@ def run(engine):
                 page.on('pageerror',lambda e:errors.append(str(e)))
                 url=f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
-                type_pin(page,'#pinInput','1234');type_pin(page,'#pinConfirm','1234');page.locator('#pinSubmit').click()
-                expect(page.locator('#pinDialog')).not_to_be_visible()
                 page.evaluate("""async()=>{const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';for(const [kind,name] of [['places','Park'],['transport','Bus']])await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})})}""")
                 def choose(target):
                     target.get_by_role('button',name='Park',exact=True).click()
                     target.get_by_role('button',name='Bus',exact=True).click()
                 def unlock():
-                    for _ in range(5):page.locator('#lockedSurface h1').click()
-                    type_pin(page,'#pinInput','1234');page.locator('#pinSubmit').click()
+                    for _ in range(5):page.locator('#lockedSurface h1:visible').click()
                     expect(page.locator('#start')).to_be_visible()
                 page.reload();choose(page)
                 expect(page.get_by_text('The display locks when you start.',exact=False)).not_to_be_visible()
@@ -71,7 +67,7 @@ def run(engine):
                 expect(second.locator('#skipPlanIntro')).not_to_be_checked()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): pre-lock splash, back/Escape, unchecked repeat, persisted skip, reload restore, PIN protection and independent device preference.')
+                print(f'PASS ({engine}): pre-lock splash, back/Escape, unchecked repeat, persisted skip, reload restore, tap exit and independent device preference.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

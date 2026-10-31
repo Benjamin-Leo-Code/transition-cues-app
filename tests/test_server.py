@@ -41,30 +41,19 @@ class AppTests(unittest.TestCase):
         connection.close()
         return response.status, result, session
 
-    def setup_pin(self):
-        status, _, cookie = self.request('/api/setup', {'pin': '1234'})
-        self.assertEqual(status, 200)
-        self.cookie = cookie.split(';')[0]
-
     def add(self, kind='places', name='Park'):
         status, item, _ = self.request('/api/items', {'kind': kind, 'name': name, 'image': PNG})
         self.assertEqual(status, 201)
         return item
 
-    def test_first_launch_and_single_setup(self):
-        self.assertTrue(self.request('/api/state')[1]['setupRequired'])
-        self.assertEqual(self.request('/api/setup', {'pin': 'abc'})[0], 400)
-        self.setup_pin()
-        self.assertEqual(self.request('/api/setup', {'pin': '9999'})[0], 403)
+    def test_first_launch_needs_no_setup(self):
         public = self.request('/api/state')[1]
         self.assertNotIn('pin', public)
-        self.assertFalse(public['setupRequired'])
-        persisted = json.loads((Path(self.directory.name) / 'library.json').read_text())
-        self.assertNotIn('1234', json.dumps(persisted['pin']))
-        self.assertEqual(persisted['version'], 1)
+        self.assertNotIn('setupRequired', public)
+        self.add()
+        self.assertEqual(Store(self.directory.name).public()['places'][0]['name'], 'Park')
 
     def test_upload_read_delete_and_persistence(self):
-        self.setup_pin()
         item = self.add()
         self.add('transport', 'Bus')
         fresh_store = Store(self.directory.name)
@@ -75,28 +64,11 @@ class AppTests(unittest.TestCase):
         # Active locked displays must still be able to load their old photo.
         self.assertEqual(self.request(item['image'])[0], 200)
 
-    def test_auth_and_cross_origin(self):
-        self.setup_pin()
-        self.assertEqual(self.request('/api/items', {'kind':'places','name':'Home','image':PNG}, cookie='')[0], 403)
+    def test_lan_editing_and_cross_origin_protection(self):
+        self.assertEqual(self.request('/api/items', {'kind':'places','name':'Home','image':PNG}, cookie='')[0], 201)
         self.assertEqual(self.request('/api/settings', {'returnUrl':''}, origin='http://evil.example')[0], 403)
-        self.assertEqual(self.request('/api/unlock', {'pin':'wrong'}, cookie='')[0], 403)
-        status, _, cookie = self.request('/api/unlock', {'pin':'1234'}, cookie='')
-        self.assertEqual(status, 200)
-        self.assertIn('HttpOnly', cookie)
-        self.assertIn('SameSite=Strict', cookie)
-
-    def test_pin_change_revokes_sessions(self):
-        self.setup_pin()
-        old_cookie = self.cookie
-        status, _, cookie = self.request('/api/pin', {'currentPin':'1234','pin':'5678'})
-        self.assertEqual(status, 200)
-        self.assertEqual(self.request('/api/settings', {'returnUrl':''}, cookie=old_cookie)[0], 403)
-        self.cookie = cookie.split(';')[0]
-        self.assertEqual(self.request('/api/unlock', {'pin':'1234'})[0], 403)
-        self.assertEqual(self.request('/api/unlock', {'pin':'5678'})[0], 200)
 
     def test_upload_validation_and_path_traversal(self):
-        self.setup_pin()
         for image in ('invalid', base64.b64encode(b'<svg onload="alert(1)"/>').decode()):
             self.assertEqual(self.request('/api/items', {'kind':'places','name':'Bad','image':image})[0], 400)
         self.assertEqual(self.request('/images/../../server.py')[0], 404)
@@ -104,37 +76,29 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.request('/api/settings', {'returnUrl':'javascript:alert(1)'})[0], 400)
         self.assertEqual(self.request('/api/settings', {'returnUrl':'http://homeassistant.local:8123/lovelace/0'})[0], 200)
 
-    def test_brute_force_is_limited(self):
-        self.setup_pin()
-        for _ in range(5):
-            self.assertEqual(self.request('/api/unlock', {'pin':'0000'})[0], 403)
-        status, error, _ = self.request('/api/unlock', {'pin':'1234'})
-        self.assertEqual(status, 403)
-        self.assertIn('Wait one minute', error['error'])
+    def test_obsolete_pin_endpoints_are_removed(self):
+        for endpoint in ['setup', 'unlock', 'pin']:
+            self.assertEqual(self.request('/api/'+endpoint, {'pin':'1234'})[0], 404)
 
     def test_concurrent_uploads_do_not_lose_records(self):
-        self.setup_pin()
         with ThreadPoolExecutor(max_workers=4) as executor:
             items = list(executor.map(lambda i: self.add(name=f'Place {i}'), range(8)))
         self.assertEqual(len({x['id'] for x in items}), 8)
         self.assertEqual(len(Store(self.directory.name).public()['places']), 8)
 
-    def test_bring_items_storage_auth_and_removal(self):
-        self.setup_pin()
-        self.assertEqual(self.request('/api/items', {'kind':'items', 'name':'Drink', 'image':PNG}, cookie='')[0], 403)
+    def test_bring_items_storage_and_removal(self):
         # The library may contain more than four; the cap applies to each journey.
         items = [self.add('items', name) for name in ['Drink', 'Headphones', 'Coat', 'Toy', 'Bag']]
         self.assertEqual(len(Store(self.directory.name).public()['items']), 5)
-        self.assertEqual(self.request('/api/delete', {'kind':'items', 'id':items[0]['id']}, cookie='')[0], 403)
         self.assertEqual(self.request('/api/delete', {'kind':'items', 'id':items[0]['id']})[0], 200)
         self.assertEqual(len(self.request('/api/state')[1]['items']), 4)
         self.assertEqual(self.request(items[0]['image'])[0], 200)
 
-    def test_older_library_keeps_photos_settings_and_pin(self):
-        self.setup_pin()
+    def test_older_library_keeps_photos_settings_and_removes_pin(self):
         place = self.add()
         path = Path(self.directory.name) / 'library.json'
         legacy = json.loads(path.read_text())
+        legacy['pin'] = {'salt':'old-salt', 'digest':'old-hash'}
         legacy.pop('items')
         legacy['returnUrl'] = 'http://homeassistant.local:8123/'
         path.write_text(json.dumps(legacy))
@@ -142,12 +106,12 @@ class AppTests(unittest.TestCase):
         self.assertEqual(upgraded.public()['items'], [])
         self.assertEqual(upgraded.public()['places'], [place])
         self.assertEqual(upgraded.public()['returnUrl'], legacy['returnUrl'])
-        upgraded.verify('1234', 'test')
+        self.assertNotIn('pin', upgraded.data)
+        self.assertNotIn('pin', json.loads(path.read_text()))
         upgraded.save()
         self.assertEqual(Store(self.directory.name).public()['items'], [])
 
     def test_people_migration_storage_and_crop(self):
-        self.setup_pin()
         person = self.add('people', 'Person A')
         self.assertEqual(Store(self.directory.name).public()['people'], [person])
         status, uploaded, _ = self.request('/api/items', {'kind':'people','name':'Person B','image':PNG,'original':PNG})
@@ -156,7 +120,6 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.request(uploaded['originalImage'])[0], 200)
         old_image = person['image']
         body = {'kind':'people', 'id':person['id'], 'sourceImage':old_image, 'image':PNG}
-        self.assertEqual(self.request('/api/crop', body, cookie='')[0], 403)
         self.assertEqual(self.request('/api/crop', body | {'image':'invalid'})[0], 400)
         status, cropped, _ = self.request('/api/crop', body)
         self.assertEqual(status, 200)
@@ -175,7 +138,6 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.request(second['image'])[0], 200)
 
     def test_older_library_without_people_and_crop_original(self):
-        self.setup_pin()
         item = self.add()
         path = Path(self.directory.name) / 'library.json'
         legacy = json.loads(path.read_text())
@@ -184,9 +146,7 @@ class AppTests(unittest.TestCase):
         path.write_text(json.dumps(legacy))
         upgraded = Store(self.directory.name)
         self.assertEqual(upgraded.public()['people'], [])
-        upgraded.verify('1234', 'migration')
         self.server.store = upgraded
-        self.cookie = self.request('/api/unlock', {'pin':'1234'})[2].split(';')[0]
         status, result, _ = self.request('/api/crop', {'kind':'places','id':item['id'], 'sourceImage':item['image'],'image':PNG})
         self.assertEqual(status, 200)
         self.assertEqual(result['originalImage'], item['image'])

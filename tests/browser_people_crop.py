@@ -9,7 +9,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, type_pin, show_plan
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
 
 
 def run(engine):
@@ -26,13 +26,12 @@ def run(engine):
                 page.on('pageerror',lambda e:errors.append(str(e)))
                 url=f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
-                type_pin(page, '#pinInput', '1234');type_pin(page, '#pinConfirm', '1234');page.locator('#pinSubmit').click()
                 expect(page.locator('#start')).to_be_disabled()
                 expect(page.locator('footer')).to_have_count(0)
                 expect(page.get_by_text('Familiar pictures. A little more certainty.',exact=True)).to_have_count(0)
                 phone=browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
                 mobile=phone.new_page();mobile.on('pageerror',lambda e:errors.append(str(e)))
-                mobile.goto(url+'/#manage');type_pin(mobile, '#pinInput', '1234');mobile.locator('#pinSubmit').click()
+                mobile.goto(url+'/#manage')
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Three colour bands make a crop's actual output measurable.
                 png=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');['#d00000','#00b000','#0000d0'].forEach((color,i)=>{x.fillStyle=color;x.fillRect(i*200,0,200,400)});return c.toDataURL('image/png').split(',')[1]}''')
@@ -137,8 +136,7 @@ def run(engine):
                 # Neither People nor bring-along items is required.
                 expect(page.locator('#start')).to_be_enabled();show_plan(page)
                 expect(page.locator('.journey-people')).to_have_count(0)
-                for _ in range(5):page.locator('#lockedSurface h1').click()
-                type_pin(page, '#pinInput', '1234');page.locator('#pinSubmit').click()
+                for _ in range(5):page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).to_be_visible()
                 for name in ['Drink','Coat','Toy','Headphones','Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
                 # People can be toggled independently of the four-item cap.
@@ -149,19 +147,23 @@ def run(engine):
                 show_plan(page);expect(page.locator('.person-card')).to_have_count(2)
                 assert page.locator('.person-card img').first.evaluate("img=>getComputedStyle(img).borderRadius==='50%'")
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
-                # Exit browser fullscreen only; the application's PIN lock must remain active.
+                # Exit browser fullscreen only; the application's journey display must remain active.
                 leave_fullscreen(page)
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    if height>width:
+                        expect(page.locator('.orientation-notice')).to_be_visible()
+                        expect(page.locator('.cue-pair')).not_to_be_visible()
+                        continue
                     for photo in page.locator('.cue-card img,.bring-card img').all():
                         bounds=photo.bounding_box()
                         assert abs(bounds['width']-bounds['height'])<1,bounds
                     assert page.locator('.journey-people').evaluate('(s)=>s.getBoundingClientRect().top>=document.querySelector(".cue-pair").getBoundingClientRect().bottom')
                     page.locator('.bring-items').scroll_into_view_if_needed()
                     expect(page.locator('.bring-card').last).to_be_in_viewport()
-                    page.locator('#lockedSurface h1').scroll_into_view_if_needed()
+                    page.locator('#lockedSurface h1:visible').scroll_into_view_if_needed()
                 page.set_viewport_size({'width':1280,'height':900})
                 page.screenshot(path='/tmp/transition-cues-locked.png',full_page=True)
                 # Crop an existing person while that same person's old picture is locked.
@@ -185,19 +187,17 @@ def run(engine):
                 size=mobile.evaluate('''async src=>{const i=new Image();i.src=src;await i.decode();return [i.width,i.height]}''',restored['image'])
                 assert size==[400,400],size
                 mobile.screenshot(path='/tmp/transition-cues-phone.png',full_page=True)
-                # Removing a person doesn't change the locked snapshot or require a PIN bypass.
+                # Removing a person doesn't change the locked snapshot.
                 mobile.get_by_role('button',name='Remove Person A',exact=True).click();mobile.get_by_role('button',name='Remove',exact=True).click()
                 expect(mobile.locator('#deleteDialog')).not_to_be_visible()
                 page.reload();expect(page.locator('.person-card')).to_have_count(2)
-                for _ in range(5):page.locator('#lockedSurface h1').click()
-                type_pin(page, '#pinInput', '0000');page.locator('#pinSubmit').click();expect(page.locator('#pinError')).to_contain_text('not recognised')
-                type_pin(page, '#pinInput', '1234');page.locator('#pinSubmit').click();expect(page.locator('#start')).to_be_visible()
+                for _ in range(5):page.locator('#lockedSurface h1:visible').click()
                 # New version can still restore a journey from before the People category existed.
                 page.evaluate("async()=>{const s=await(await fetch('/api/state')).json();localStorage.setItem('tc-locked-journey',JSON.stringify({places:s.places[0],transport:s.transport[0]}))}")
                 page.reload();expect(page.locator('#lockedSurface')).to_be_visible();expect(page.locator('.journey-people')).to_have_count(0)
                 assert not errors,errors
                 browser.close()
-                print('PASS: footer removal, optional people, circles, responsive layout, square frames, fill and fit, coloured bars, transparency preservation, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, PIN and legacy journey restore.')
+                print('PASS: footer removal, optional people, circles, responsive layout, square frames, fill and fit, coloured bars, transparency preservation, cancel, pixel-checked saved crop, original recrop, locked snapshot retention, tap exit and legacy journey restore.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.7
+
+- Show the journey in landscape, with a Turn your device prompt in portrait. Put People and bring-along items side by side.
+- Remove PIN setup, prompts and editing restrictions. Five taps within three seconds return to the plan choices.
+- Align destination and transport photos and To:/By: labels; long names expand downward.
+- Preserve existing photos and settings while removing obsolete saved PIN hashes.
+
 ## 1.0.6
 
 - Simplify the logo and page headings; use accessible icon links for Library and Settings at the top right, with Back to plan on parent pages.

@@ -2,7 +2,7 @@
 const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
-let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pinAction = null, pendingDelete = null;
+let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
 let toastTimer, pendingJourney = null;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
@@ -83,104 +83,26 @@ $('#planForm').onsubmit=e=>{e.preventDefault();beginJourney();};
 $('#planBack').onclick=()=>$('#planDialog').close();
 $('#planDialog').addEventListener('close',()=>{pendingJourney=null;});
 
+function finishJourney() {
+  try { localStorage.removeItem('tc-locked-journey'); }
+  catch { toast('Allow browser storage to finish this saved plan.');return; }
+  selected={places:locked.places,transport:locked.transport,items:locked.items||[],people:locked.people||[]};
+  state ??= {places:[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
+  locked=null;taps=[];
+  if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+  location.hash='choose';renderChoose();
+}
 function renderLocked() {
   document.body.classList.add('lock-active');
   const items = locked.items || [];
   const people = locked.people || [];
-  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><h1>We’re going…</h1><div class="cue-pair">${['places','transport'].map((kind,i)=>`<figure class="cue-card"><img src="${esc(locked[kind].image)}" alt="${esc(locked[kind].name)}" draggable="false"><figcaption><span class="cue-label">${i===0?'To':'By'}</span><span class="cue-name">${esc(locked[kind].name)}</span></figcaption></figure>`).join('')}</div>${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">Coming with us…</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing…</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</main>`;
+  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="orientation-notice" role="status"><span aria-hidden="true">↻</span><h1>Turn your device</h1><p>Turn to landscape to see the plan.</p></div><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair">${['places','transport'].map((kind,i)=>`<figure class="cue-card"><img src="${esc(locked[kind].image)}" alt="${esc(locked[kind].name)}" draggable="false"><figcaption><span class="cue-label">${i===0?'To:':'By:'}</span><span class="cue-name">${esc(locked[kind].name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">Coming with us…</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing…</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
   $('#lockedSurface').addEventListener('contextmenu', e=>e.preventDefault());
   $('#lockedSurface').onclick = () => {
-    const now = Date.now(); taps = taps.filter(t=>now-t<4000); taps.push(now);
-    if(taps.length>=5) { taps=[]; showPin('unlock'); }
+    const now = Date.now(); taps = taps.filter(t=>now-t<3000); taps.push(now);
+    if(taps.length>=5)finishJourney();
   };
 }
-// PINs stay in memory; the browser sees buttons and masked dots, not password fields.
-const pinValues = new WeakMap();
-let dialogPad = null;
-function pinValue(id) { return pinValues.get($('#'+id)) || ''; }
-function pinField(id, label) {
-  return `<div><label for="${id}">${label}</label><button id="${id}" type="button" class="pin-entry" data-pin-label="${label}" aria-label="${label}, no digits entered"><span aria-hidden="true">○ ○ ○ ○</span></button></div>`;
-}
-function wirePinPad(form, ids, holder, submit, submitLabel) {
-  const fields = ids.map(id=>$('#'+id));
-  let active=fields[0];
-  holder.innerHTML=`<p class="pin-pad-label" role="status"></p><div class="pin-keypad" role="group" aria-label="PIN number pad">${['1','2','3','4','5','6','7','8','9','clear','0','back'].map(key=>`<button type="button" data-pin-key="${key}" aria-label="${key==='clear'?'Clear PIN':key==='back'?'Delete last digit':key}">${key==='clear'?'Clear':key==='back'?'⌫':key}</button>`).join('')}</div>${ids.length>1 && form.id!=='pinForm'?'<button class="pin-next secondary" type="button">Next PIN field →</button>':''}`;
-  function paint() {
-    const busy=form.dataset.pinBusy==='true';
-    holder.querySelectorAll('button').forEach(button=>button.disabled=busy);
-    if(form.id==='pinForm')$('#pinCancel').disabled=busy;
-    for(const field of fields) {
-      field.disabled=busy;
-      const value=pinValues.get(field)||'';
-      field.innerHTML=`<span aria-hidden="true">${value?'●'.repeat(value.length):'○ ○ ○ ○'}</span>`;
-      field.setAttribute('aria-label',`${field.dataset.pinLabel}, ${value.length} digits entered`);
-      field.setAttribute('aria-pressed',String(field===active));
-      field.classList.toggle('active',field===active);
-    }
-    holder.querySelector('.pin-pad-label').textContent=`${active.dataset.pinLabel} · ${(pinValues.get(active)||'').length} digits entered`;
-    const allValid=fields.every(field=>(pinValues.get(field)||'').length>=4);
-    submit.textContent=submitLabel(active.id);
-    submit.disabled=form.dataset.pinBusy==='true' || (form.id==='pinForm' && pinAction==='setup' && active===fields[0] ? (pinValues.get(active)||'').length<4 : !allValid);
-    const next=holder.querySelector('.pin-next');
-    if(next) next.hidden=active===fields[fields.length-1];
-  }
-  function activate(field,focus=true) { active=field;paint();if(focus)field.focus({preventScroll:true}); }
-  function key(value) {
-    if(form.dataset.pinBusy==='true')return;
-    let pin=pinValues.get(active)||'';
-    if(value==='clear')pin='';
-    else if(value==='back')pin=pin.slice(0,-1);
-    else if(/^[0-9]$/.test(value) && pin.length<8)pin+=value;
-    pinValues.set(active,pin);paint();
-  }
-  for(const field of fields){pinValues.set(field,'');field.onclick=()=>activate(field);field.onfocus=()=>activate(field,false);}
-  holder.onclick=e=>{const button=e.target.closest('[data-pin-key]');if(button)key(button.dataset.pinKey);};
-  form.onkeydown=e=>{
-    if(e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
-    if(/^[0-9]$/.test(e.key)){e.preventDefault();key(e.key);}
-    else if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();key(e.key==='Delete'?'clear':'back');}
-    else if(e.key==='Enter' && fields.includes(e.target)){e.preventDefault();if(!submit.disabled)form.requestSubmit(submit);}
-  };
-  const next=holder.querySelector('.pin-next');
-  if(next)next.onclick=()=>activate(fields[Math.min(fields.length-1,fields.indexOf(active)+1)]);
-  paint();
-  return {get activeId(){return active.id;},activate:id=>activate($('#'+id)),clear:()=>{fields.forEach(field=>pinValues.set(field,''));paint();},paint};
-}
-function validPin(id) {
-  const value=pinValue(id);
-  if(!/^[0-9]{4,8}$/.test(value))throw new Error('Enter a PIN of 4 to 8 digits using the number pad.');
-  return value;
-}
-function showPin(action) {
-  if ($('#pinDialog').open) return;
-  pinAction = action;
-  const setup = action === 'setup';
-  $('#pinForm').dataset.pinBusy='false'; $('#pinError').textContent='';
-  $('#pinTitle').textContent = setup ? 'A PIN for the grown-ups' : 'Enter your parent PIN';
-  $('#pinHelp').textContent = setup ? 'Choose 4 to 8 digits using the number pad, then confirm your PIN.' : 'Use the number pad to unlock. Your pictures will stay on screen until you do.';
-  $('#confirmGroup').hidden = !setup;
-  $('#pinCancel').hidden = setup;
-  dialogPad=wirePinPad($('#pinForm'),setup?['pinInput','pinConfirm']:['pinInput'],$('#pinPad'),$('#pinSubmit'),id=>setup?(id==='pinInput'?'Next →':'Save PIN & get started'):'Unlock');
-  $('#pinDialog').showModal(); $('#pinInput').focus();
-}
-$('#pinCancel').onclick = () => { if($('#pinForm').dataset.pinBusy==='true')return; $('#pinDialog').close(); if (!locked) location.hash='choose'; };
-$('#pinDialog').addEventListener('cancel', e => { if(pinAction==='setup' || $('#pinForm').dataset.pinBusy==='true') e.preventDefault(); else if(!locked) location.hash='choose'; });
-$('#pinDialog').addEventListener('close',()=>dialogPad?.clear());
-$('#pinForm').onsubmit = async e => {
-  e.preventDefault(); const form=$('#pinForm');
-  if(form.dataset.pinBusy==='true')return;
-  $('#pinError').textContent='';
-  try {
-    const pin=validPin('pinInput');
-    if(pinAction==='setup' && dialogPad.activeId==='pinInput') { dialogPad.activate('pinConfirm');return; }
-    if(pinAction==='setup' && pin!==validPin('pinConfirm')) throw new Error('The PINs do not match. Please try again.');
-    form.dataset.pinBusy='true';dialogPad.paint();
-    await api(pinAction==='setup'?'setup':'unlock',{pin});
-    if(locked) { localStorage.removeItem('tc-locked-journey'); locked=null; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }
-    $('#pinDialog').close(); await refresh(); await route();
-  } catch(error) { $('#pinError').textContent=error.message; form.dataset.pinBusy='false'; dialogPad.clear();dialogPad.activate('pinInput'); }
-  finally { form.dataset.pinBusy='false';dialogPad.paint(); }
-};
 function renderManage() {
   frame(intro('Little pictures. Familiar faces.','Add your own photos, so every journey starts with something familiar.')+
     `<div class="management"><section class="panel"><h2>Add a picture</h2><p>A clear photo and a short, familiar name work best.</p><form id="uploadForm"><div><label for="kind">What is it?</label><select id="kind"><option value="places">A place</option><option value="transport">A way to travel</option><option value="items">An item to bring along</option><option value="people">A person</option></select></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
@@ -294,34 +216,19 @@ function renderLibrary() {
 $('#deleteCancel').onclick=()=>$('#deleteDialog').close();
 $('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage();toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
 function renderSettings() {
-  frame(intro('A few things for the grown-ups.','Keep your parent PIN and your return link up to date.')+`<div class="settings-grid"><section class="panel"><h2>Parent PIN</h2><p>Use the same PIN on the tablet and your phone.</p><form id="changePinForm">${pinField('oldPin','Current PIN')}${pinField('newPin','New PIN · 4 to 8 digits')}${pinField('newPinConfirm','Confirm new PIN')}<div id="settingsPinPad"></div><button class="primary" id="changePinSubmit">Change PIN</button><p class="error" id="changeError" role="alert"></p></form></section><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section><section class="panel wide"><h2>On the tablet</h2><p>Choose a place, transport and up to four optional items to bring along, plus any people joining you, then tap “Show the plan”. To finish, tap the picture screen five times within four seconds and enter your PIN. Cancelling the PIN prompt keeps the journey locked.</p><p>Use the tablet’s kiosk mode or guided access to prevent leaving the browser. Keep Transition Cues open in its own browser tab rather than embedding it inside another page.</p><p class="help">To manage pictures from your phone, open this app’s address and choose Picture library. Both devices must reach the same server. Your pictures stay on your home server.</p></section></div>`, 'settings');
+  frame(intro('A few things for the grown-ups.','Keep your return link up to date.')+`<div class="settings-grid"><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section><section class="panel wide"><h2>On the tablet</h2><p>Choose a place, transport and up to four optional items to bring along, plus any people joining you, then tap “Show the plan”. To finish, tap the picture screen five times within three seconds. Turn the device to landscape to show the plan.</p><p>Use the tablet’s kiosk mode or guided access to prevent leaving the browser. Keep Transition Cues open in its own browser tab rather than embedding it inside another page.</p><p class="help">To manage pictures from your phone, open this app’s address and choose Picture library. Both devices must reach the same server. Your pictures stay on your home server.</p></section></div>`, 'settings');
   $('#returnForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('settings',{returnUrl:$('#returnUrl').value.trim()});await refresh();renderSettings();toast('Return link saved.');}catch(error){$('#returnError').textContent=error.message;}finally{b.disabled=false;}};
-  const changeForm=$('#changePinForm');
-  const settingsPad=wirePinPad(changeForm,['oldPin','newPin','newPinConfirm'],$('#settingsPinPad'),$('#changePinSubmit'),()=> 'Change PIN');
-  changeForm.onsubmit=async e=>{
-    e.preventDefault();if(changeForm.dataset.pinBusy==='true')return;
-    $('#changeError').textContent='';
-    try {
-      const currentPin=validPin('oldPin'), pin=validPin('newPin');
-      if(pin!==validPin('newPinConfirm'))throw new Error('The new PINs do not match.');
-      changeForm.dataset.pinBusy='true';settingsPad.paint();
-      await api('pin',{currentPin,pin});await refresh();renderSettings();toast('PIN changed. Other devices will need the new PIN.');
-    }catch(error){$('#changeError').textContent=error.message;changeForm.dataset.pinBusy='false';settingsPad.clear();settingsPad.activate('oldPin');}
-    finally{changeForm.dataset.pinBusy='false';settingsPad.paint();}
-  };
-
 }
+
 async function route() {
   if($('#planDialog').open)$('#planDialog').close();
   if(locked){renderLocked();return;}
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
-  if(state.setupRequired){renderChoose();showPin('setup');return;}
-  if(['manage','settings'].includes(view) && !state.authenticated){renderChoose();showPin('manage');return;}
   if(view==='manage')renderManage();else if(view==='settings')renderSettings();else renderChoose();
 }
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#pinDialog').open&&!$('#deleteDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#deleteDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
 async function start() {
   try {
     const saved=localStorage.getItem('tc-locked-journey');

@@ -41,9 +41,8 @@ else:
     try:
         docker('volume', 'create', volume)
         start()
-        first = probe + '''assert state['setupRequired']
-response=request('/api/setup',{'pin':'1234'})
-cookie=response.headers['Set-Cookie'].split(';')[0]
+        first = probe + '''assert 'setupRequired' not in state
+cookie=''
 photo='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII='
 for kind,name in [('places','Home'),('items','Drink'),('people','Person A')]:
  record=json.load(request('/api/items',{'kind':kind,'name':name,'image':photo},cookie))
@@ -62,7 +61,7 @@ print('Initial setup and uploads saved in private /data')
         docker('stop', '-t', '2', name)
         docker('rm', name)
         start()  # A replacement container must use the same private data volume.
-        second = probe + '''assert not state['setupRequired']
+        second = probe + '''assert 'setupRequired' not in state
 assert state['places'][0]['name']=='Home'
 assert state['items'][0]['name']=='Drink'
 assert state['people'][0]['name']=='Person A'
@@ -70,8 +69,7 @@ assert state['people'][0]['originalImage']!=state['people'][0]['image']
 assert request(state['items'][0]['image']).status==200
 assert request('/').status==200
 assert request('/app.js').status==200
-assert request('/api/unlock',{'pin':'1234'}).status==200
-print('PASS: replacement container preserves library, images and PIN in /data')
+print('PASS: replacement container preserves library and images in /data')
 '''
         print(docker('exec', '-i', name, 'python', '-', source=second))
     except subprocess.CalledProcessError as error:
@@ -83,5 +81,5 @@ print('PASS: replacement container preserves library, images and PIN in /data')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image', default='transition-cues-ha-check:1.0.6')
+    parser.add_argument('--image', default='transition-cues-ha-check:1.0.7')
     run(parser.parse_args().image)

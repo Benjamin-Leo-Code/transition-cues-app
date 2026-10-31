@@ -1,0 +1,82 @@
+"""Landscape gating, stable long-name geometry, navigation and timed tap-to-exit."""
+import argparse
+import os
+from pathlib import Path
+import sys
+import tempfile
+import threading
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'transition_cues'))
+from server import make_server
+from playwright.sync_api import sync_playwright, expect
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
+
+
+def run(engine):
+    with tempfile.TemporaryDirectory() as data:
+        server=make_server('127.0.0.1',0,data)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            with sync_playwright() as p:
+                options={'headless':True}
+                if engine=='chromium' and os.environ.get('CHROMIUM_PATH'):options['executable_path']=os.environ['CHROMIUM_PATH']
+                browser=getattr(p,engine).launch(**options)
+                page=browser.new_page(viewport={'width':1024,'height':768});track_fullscreen(page)
+                errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+                page.goto(f'http://127.0.0.1:{server.server_port}')
+                expect(page.locator('#start')).to_be_disabled()
+                expect(page.locator('#pinDialog')).to_have_count(0)
+                page.get_by_role('link',name='Settings',exact=True).click()
+                expect(page.locator('#returnUrl')).to_be_visible()
+                page.get_by_role('link',name='Back to plan',exact=False).click()
+                expect(page.locator('#start')).to_be_visible()
+                names=[['places','An especially long destination name across several lines'],['transport','Bus'],['people','A person with a much longer name'],['people','Person B'],['items','Headphones with a very long name'],['items','Drink']]
+                page.evaluate("""async names=>{for(const [kind,name] of names){const canvas=document.createElement('canvas');canvas.width=canvas.height=400;const ctx=canvas.getContext('2d');ctx.fillStyle={places:'#9caf88',transport:'#ddbd86',people:'#c5b5d3',items:'#a8c5d6'}[kind];ctx.fillRect(0,0,400,400);const image=canvas.toDataURL('image/png').split(',')[1];const r=await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})});if(!r.ok)throw Error('Fixture upload failed')}}""",names)
+                page.reload()
+                for _,name in names:page.get_by_role('button',name=name,exact=True).click()
+                show_plan(page);leave_fullscreen(page)
+                def assert_aligned():
+                    photos=page.locator('.cue-card img').all()
+                    labels=page.locator('.cue-label').all()
+                    assert abs(photos[0].bounding_box()['y']-photos[1].bounding_box()['y'])<1
+                    assert abs(labels[0].bounding_box()['y']-labels[1].bounding_box()['y'])<1
+                    assert page.locator('.cue-name').first.bounding_box()['height']>page.locator('.cue-name').last.bounding_box()['height']
+                    pair=page.locator('.cue-pair').bounding_box()
+                    groups=[page.locator('.journey-people').bounding_box(),page.locator('.bring-items').bounding_box()]
+                    assert abs(groups[0]['y']-groups[1]['y'])<1
+                    assert groups[0]['x']+groups[0]['width']<=groups[1]['x']+1
+                    assert groups[0]['y']>=pair['y']+pair['height']
+                    for selector in ['.person-card img','.bring-card img']:
+                        boxes=[image.bounding_box() for image in page.locator(selector).all()]
+                        assert abs(boxes[0]['y']-boxes[1]['y'])<1
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                for width,height in [(1024,768),(844,390),(1280,900)]:
+                    page.set_viewport_size({'width':width,'height':height});assert_aligned()
+                page.screenshot(path='/tmp/transition-cues-landscape.png',full_page=False)
+                page.set_viewport_size({'width':390,'height':844})
+                expect(page.get_by_role('heading',name='Turn your device')).to_be_visible()
+                expect(page.locator('.journey-content')).not_to_be_visible()
+                page.screenshot(path='/tmp/transition-cues-portrait.png',full_page=False)
+                page.reload();expect(page.get_by_role('heading',name='Turn your device')).to_be_visible()
+                page.set_viewport_size({'width':1024,'height':768})
+                expect(page.locator('.journey-content')).to_be_visible();assert_aligned()
+                # Deterministic time verifies that a fifth late tap cannot exit.
+                page.evaluate('window.__tapTime=10000;Date.now=()=>window.__tapTime')
+                for _ in range(4):page.locator('.journey-content>h1').click()
+                expect(page.locator('#lockedSurface')).to_be_visible()
+                page.evaluate('window.__tapTime+=3001')
+                page.locator('.journey-content>h1').click()
+                expect(page.locator('#lockedSurface')).to_be_visible()
+                for _ in range(4):page.locator('.journey-content>h1').click()
+                expect(page.locator('#start')).to_be_visible()
+                assert page.evaluate("localStorage.getItem('tc-locked-journey')") is None
+                page.reload();expect(page.locator('#start')).to_be_visible()
+                assert not errors,errors
+                browser.close()
+                print(f'PASS ({engine}): no PIN setup, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+        finally:
+            server.shutdown();server.server_close();thread.join()
+
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--browser',choices=['chromium','webkit'],default='chromium')
+    run(parser.parse_args().browser)

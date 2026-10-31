@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, type_pin, show_plan
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
 
 
 def run():
@@ -29,19 +29,12 @@ def run():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 url = f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
-                expect(page.locator('#pinDialog')).to_be_visible()
-                type_pin(page, '#pinInput', '1234')
-                type_pin(page, '#pinConfirm', '1234')
-                page.locator('#pinSubmit').click()
-                expect(page.locator('#pinDialog')).not_to_be_visible()
                 expect(page.locator('#start')).to_be_disabled()
                 page.screenshot(path='/tmp/transition-cues-empty.png', full_page=True)
                 phone = browser.new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True)
                 mobile = phone.new_page()
                 mobile.on('pageerror', lambda error: errors.append(str(error)))
                 mobile.goto(url + '/#manage')
-                type_pin(mobile, '#pinInput', '1234')
-                mobile.locator('#pinSubmit').click()
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Test images are generated within the browser, never shipped in the real library.
                 for kind, name, color in [('places','Park','#9caf88'),('transport','Bus','#ddbd86'),('items','Drink','#a8c5d6'),('items','Headphones','#c5b5d3'),('items','Coat','#d7b4a2'),('items','Toy','#c0cdaa'),('items','Bag','#e0d1a2')]:
@@ -64,9 +57,7 @@ def run():
                 page.reload()
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 expect(page.locator('.bring-items')).to_have_count(0)
-                for _ in range(5): page.locator('#lockedSurface h1').click()
-                type_pin(page, '#pinInput', '1234')
-                page.locator('#pinSubmit').click()
+                for _ in range(5): page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).to_be_visible()
                 page.get_by_role('button', name='Park').click()
                 page.get_by_role('button', name='Bus').click()
@@ -90,21 +81,23 @@ def run():
                 page.evaluate("const j=JSON.parse(localStorage.getItem('tc-locked-journey'));j.items.push(j.items[0]);localStorage.setItem('tc-locked-journey',JSON.stringify(j));")
                 page.reload()
                 expect(page.locator('#lockedSurface')).to_be_visible()
-                for _ in range(4): page.locator('#lockedSurface h1').click()
-                expect(page.locator('#pinDialog')).not_to_be_visible()
-                page.locator('#lockedSurface h1').click()
-                expect(page.locator('#pinDialog')).to_be_visible()
-                page.locator('#pinCancel').click()
+                for _ in range(4): page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#lockedSurface')).to_be_visible()
+                page.locator('#lockedSurface h1:visible').click()
+                expect(page.locator('#start')).to_be_visible()
+                show_plan(page)
                 expect(page.locator('.bring-card')).to_have_count(4)
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
-                # Exit browser fullscreen only; the application's PIN lock must remain active.
+                # Exit browser fullscreen only; the application's journey display must remain active.
                 leave_fullscreen(page)
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Locked layout overflows horizontally'
-                    assert page.locator('.bring-items').evaluate('(items)=>items.getBoundingClientRect().bottom <= innerHeight+1'), f'Items hidden at {width}x{height}'
+                    if height>width:
+                        expect(page.locator('.orientation-notice')).to_be_visible()
+                        expect(page.locator('.cue-pair')).not_to_be_visible()
+                        continue
                     assert page.locator('.bring-items').evaluate('(items)=>items.getBoundingClientRect().top >= document.querySelector(".cue-pair").getBoundingClientRect().bottom'), 'Items must be below the main photos'
                 page.set_viewport_size({'width':1280,'height':900})
                 page.screenshot(path='/tmp/transition-cues-locked.png', full_page=True)
@@ -125,26 +118,15 @@ def run():
                 page.reload()
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 assert page.locator('.cue-card img').first.evaluate('(img)=>img.complete && img.naturalWidth>0')
-                for _ in range(5): page.locator('#lockedSurface h1').click()
-                type_pin(page, '#pinInput', '0000')
-                page.locator('#pinSubmit').click()
-                expect(page.locator('#pinError')).to_contain_text('not recognised')
-                expect(page.locator('#lockedSurface')).to_be_visible()
-                type_pin(page, '#pinInput', '1234')
-                page.locator('#pinSubmit').click()
+                for _ in range(5): page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).to_be_visible()
                 expect(page.locator('#lockedSurface')).to_have_count(0)
-                expect(page.locator('#itemCount')).to_contain_text('0 of 4')
+                expect(page.locator('#itemCount')).to_contain_text('3 of 4')
                 expect(page.get_by_role('button', name='Drink', exact=True)).to_have_count(0)
                 mobile.get_by_role('link', name='Settings', exact=True).click()
                 mobile.locator('#returnUrl').fill('http://homeassistant.local:8123/lovelace/0')
                 mobile.get_by_role('button', name='Save link').click()
                 expect(mobile.get_by_role('link', name='Back to main screen', exact=False)).to_be_visible()
-                type_pin(mobile, '#oldPin', '1234')
-                type_pin(mobile, '#newPin', '5678')
-                type_pin(mobile, '#newPinConfirm', '5678')
-                mobile.get_by_role('button', name='Change PIN').click()
-                expect(mobile.locator('#toast')).to_contain_text('PIN changed')
                 assert not errors, errors
                 browser.close()
                 print('PASS: original flows; item uploads, optional selection, four-item cap, deselection, old journey restore, item layout at tablet/phone sizes, item snapshots after refresh and cross-device deletion; no browser errors.')

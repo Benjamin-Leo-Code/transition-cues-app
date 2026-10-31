@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """Local, dependency-free Transition Cues server. Python 3.11+."""
 import base64
-import hashlib
-import hmac
 import json
 from pathlib import Path
-import re
 import secrets
 import threading
-import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, unquote
 
@@ -24,13 +20,14 @@ class Store:
         self.images.mkdir(exist_ok=True)
         self.path = self.directory / 'library.json'
         self.lock = threading.RLock()
-        self.sessions = {}
-        self.attempts = {}
         self.data = json.loads(self.path.read_text()) if self.path.exists() else {
-            'version': 1, 'pin': None, 'places': [], 'transport': [], 'items': [], 'people': [], 'returnUrl': ''}
+            'version': 1, 'places': [], 'transport': [], 'items': [], 'people': [], 'returnUrl': ''}
         # Existing libraries predate the optional bring-along category.
         self.data.setdefault('items', [])
         self.data.setdefault('people', [])
+        if 'pin' in self.data:
+            self.data.pop('pin')
+            self.save()
 
     def save(self):
         temporary = self.path.with_suffix('.tmp')
@@ -39,8 +36,7 @@ class Store:
         temporary.replace(self.path)
 
     def public(self):
-        return {k: self.data[k] for k in ('places', 'transport', 'items', 'people', 'returnUrl')} | {
-            'setupRequired': self.data['pin'] is None}
+        return {k: self.data[k] for k in ('places', 'transport', 'items', 'people', 'returnUrl')}
 
     def write_image(self, encoded):
         try:
@@ -60,34 +56,12 @@ class Store:
         (self.images / filename).write_bytes(raw)
         return '/images/' + filename
 
-    def set_pin(self, pin):
-        if not isinstance(pin, str) or not re.fullmatch(r'\d{4,8}', pin, flags=re.ASCII):
-            raise ValueError('Choose a PIN of 4 to 8 digits.')
-        salt = secrets.token_hex(16)
-        digest = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt.encode(), 300000).hex()
-        self.data['pin'] = {'salt': salt, 'digest': digest}
-
-    def verify(self, pin, address):
-        now = time.time()
-        failures = [t for t in self.attempts.get(address, []) if now - t < 60]
-        self.attempts[address] = failures
-        if len(failures) >= 5:
-            raise PermissionError('Too many attempts. Wait one minute and try again.')
-        record = self.data['pin']
-        valid = False
-        if record and isinstance(pin, str) and len(pin) <= 8:
-            digest = hashlib.pbkdf2_hmac('sha256', pin.encode(), record['salt'].encode(), 300000).hex()
-            valid = hmac.compare_digest(digest, record['digest'])
-        if not valid:
-            failures.append(now)
-            raise PermissionError('That PIN was not recognised. Please try again.')
-        self.attempts.pop(address, None)
 
 
 class Handler(BaseHTTPRequestHandler):
     server_version = 'TransitionCues/1'
 
-    def reply(self, status, body, mime='application/json', cookie=None):
+    def reply(self, status, body, mime='application/json'):
         if mime == 'application/json':
             body = json.dumps(body).encode()
         self.send_response(status)
@@ -97,29 +71,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Referrer-Policy', 'same-origin')
         self.send_header('Content-Security-Policy', "default-src 'self'; img-src 'self' blob: data:; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'")
-        if cookie:
-            self.send_header('Set-Cookie', cookie)
         self.end_headers()
         self.wfile.write(body)
-
-    def authenticated(self):
-        cookies = dict(part.strip().split('=', 1) for part in self.headers.get('Cookie', '').split(';') if '=' in part)
-        token = cookies.get('tc_session', '')
-        return self.server.store.sessions.get(token, 0) > time.time()
-
-    def session(self):
-        store = self.server.store
-        store.sessions = {k: v for k, v in store.sessions.items() if v > time.time()}
-        token = secrets.token_urlsafe(32)
-        store.sessions[token] = time.time() + 12 * 3600
-        secure = '; Secure' if self.headers.get('Origin', '').startswith('https://') else ''
-        return f'tc_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200{secure}'
 
     def do_GET(self):
         path = unquote(urlsplit(self.path).path)
         if path == '/api/state':
             with self.server.store.lock:
-                self.reply(200, self.server.store.public() | {'authenticated': self.authenticated()})
+                self.reply(200, self.server.store.public())
             return
         if path.startswith('/api/'):
             self.reply(404, {'error': 'Not found.'})
@@ -168,19 +127,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def mutate(self, path, body):
         store = self.server.store
-        if path == '/api/setup':
-            if store.data['pin'] is not None:
-                raise PermissionError('A PIN has already been set up.')
-            store.set_pin(body.get('pin'))
-            store.save()
-            self.reply(200, {'ok': True}, cookie=self.session())
-            return
-        if path == '/api/unlock':
-            store.verify(body.get('pin'), self.client_address[0])
-            self.reply(200, {'ok': True}, cookie=self.session())
-            return
-        if not self.authenticated():
-            raise PermissionError('Please enter your parent PIN to continue.')
         if path == '/api/items':
             kind = body.get('kind')
             name = body.get('name', '')
@@ -226,12 +172,6 @@ class Handler(BaseHTTPRequestHandler):
             store.data['returnUrl'] = url
             store.save()
             self.reply(200, {'ok': True})
-        elif path == '/api/pin':
-            store.verify(body.get('currentPin'), self.client_address[0])
-            store.set_pin(body.get('pin'))
-            store.save()
-            store.sessions.clear()
-            self.reply(200, {'ok': True}, cookie=self.session())
         else:
             self.reply(404, {'error': 'Not found.'})
 

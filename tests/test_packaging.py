@@ -23,7 +23,7 @@ class PackagingTests(unittest.TestCase):
         self.assertIn(f"## {config['version']}", (ADDON / 'CHANGELOG.md').read_text())
 
     def test_complete_self_contained_build_context(self):
-        for name in ['Dockerfile', 'server.py', 'reset_pin.py', 'README.md', 'DOCS.md', 'CHANGELOG.md',
+        for name in ['Dockerfile', 'server.py', 'README.md', 'DOCS.md', 'CHANGELOG.md',
                      'transition-cues-web/index.html', 'transition-cues-web/app.js', 'transition-cues-web/style.css']:
             self.assertTrue((ADDON / name).is_file(), name)
         self.assertFalse((ROOT / 'compose.yaml').exists())

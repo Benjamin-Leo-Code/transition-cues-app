@@ -17,7 +17,7 @@ python3 -m unittest discover -s tests -v
 node --check transition_cues/transition-cues-web/app.js
 ```
 
-For optional browser checks, install Playwright and its Chromium dependency, then run `python3 tests/browser_smoke.py` and `python3 tests/browser_people_crop.py`. The latter checks square frames, fill/fit output pixels, background colours, source transparency, People portraits and immutable locked journey snapshots; add `--browser webkit` to check the same flows with the Safari engine. Run `python3 tests/browser_keypad.py` for button-based PIN entry, and add `--browser webkit` with Playwright WebKit installed to check the Safari engine. Run `python3 tests/browser_splash.py` (or add `--browser webkit`) to check the pre-lock splash and saved browser preference. Real iOS password-manager UI still needs verification on an Apple device. Set `CHROMIUM_PATH` to use a system Chromium. It creates an isolated temporary library, not `/data` or a shared Home Assistant folder.
+For optional browser checks, install Playwright and its Chromium dependency, then run `python3 tests/browser_smoke.py` and `python3 tests/browser_people_crop.py`. The latter checks square frames, fill/fit output pixels, background colours, source transparency, People portraits and immutable locked journey snapshots; add `--browser webkit` to check the same flows with the Safari engine. Run `python3 tests/browser_display.py` (or add `--browser webkit`) for landscape gating, long-name alignment and timed tap exit. Run `python3 tests/browser_splash.py` (or add `--browser webkit`) to check the pre-lock splash and saved browser preference. Set `CHROMIUM_PATH` to use a system Chromium. It creates an isolated temporary library, not `/data` or a shared Home Assistant folder.
 
 CI runs the tests and builds the add-on for `linux/amd64` and `linux/arm64` (Home Assistant's `aarch64`). Each job also runs an isolated container check that verifies /data storage and preservation across container replacement. Nothing is pushed to a registry or deployed. A local equivalent is `docker build -t transition-cues-check ./transition_cues` followed by `python3 tests/container_smoke.py --image transition-cues-check`. The smoke check creates and removes only its own temporary containers and volume.
 
@@ -27,7 +27,7 @@ CI runs the tests and builds the add-on for `linux/amd64` and `linux/arm64` (Hom
 2. Run tests and build checks. Prefer a pull request and merge after CI passes.
 3. Merge/push the versioned change to `main`. Home Assistant uses the default branch when the repository is added without a branch suffix.
 4. Home Assistant detects the new version at its next repository refresh, or the user selects Check for updates. The user installs it with Update, or enables automatic updates.
-5. Verify a real Home Assistant installation can update without losing photos/PIN/settings; verify backup and restore too.
+5. Verify a real Home Assistant installation can update without losing photos/settings; verify backup and restore too.
 
 Do not promise an update for an unversioned source push. No GitHub release/tag is required for this source-built distribution. Do not change the same version's code after release: publish a new version. Build failures, networking or disk space can prevent an install/update even when application tests pass.
 
