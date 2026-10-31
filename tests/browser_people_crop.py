@@ -84,7 +84,7 @@ def run():
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
                 # Exit browser fullscreen only; the application's PIN lock must remain active.
                 page.evaluate("async()=>{if(document.fullscreenElement) await document.exitFullscreen()}")
-                page.wait_for_function("!document.fullscreenElement")
+                page.wait_for_function("() => !document.fullscreenElement")
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
