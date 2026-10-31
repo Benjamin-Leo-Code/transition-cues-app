@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10
+
+- Use Add a picture and its short-photo guidance as the library page heading, removing duplicate text from the upload box.
+- Move Optional beneath the Items to bring along and People headings, keeping selection counts separate.
+
 ## 1.0.9
 
 - Add Apple home-screen metadata, a web app manifest, and high-resolution regular and maskable icons using the Transition Cues logo.
