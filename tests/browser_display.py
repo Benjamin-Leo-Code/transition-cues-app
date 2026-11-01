@@ -1,4 +1,4 @@
-"""Landscape gating, stable long-name geometry, navigation and timed tap-to-exit."""
+"""Portrait/landscape layouts, long-name geometry, settings navigation and tap-to-exit."""
 import argparse
 import os
 from pathlib import Path
@@ -36,9 +36,14 @@ def run(engine):
                 expect(page.locator('#uploadForm')).to_be_visible()
                 expect(page.locator('#returnForm')).to_have_count(0)
                 expect(page.get_by_text('On the tablet',exact=True)).to_have_count(0)
-                expect(page.locator('.settings-segments svg')).to_have_count(2)
+                expect(page.locator('.settings-segments svg')).to_have_count(3)
                 page.screenshot(path='/tmp/readysteady-settings-photos.png',full_page=True)
-                page.get_by_role('tab',name='More settings',exact=True).click()
+                expect(page.locator('#library')).to_have_count(0)
+                page.get_by_role('tab',name='Manage photos',exact=True).click()
+                expect(page.locator('#library')).to_be_visible()
+                expect(page.locator('#uploadForm')).to_have_count(0)
+                expect(page.get_by_role('tab',name='Manage photos',exact=True)).to_have_attribute('aria-selected','true')
+                page.get_by_role('tab',name='Manage photos',exact=True).press('ArrowRight')
                 expect(page.get_by_role('tab',name='More settings',exact=True)).to_have_attribute('aria-selected','true')
                 expect(page.locator('#uploadForm')).to_have_count(0)
                 expect(page.locator('#settingsPanel h2')).to_have_count(1)
@@ -120,8 +125,11 @@ def run(engine):
                     assert page.locator('.cue-name').first.bounding_box()['height']>page.locator('.cue-name').last.bounding_box()['height']
                     pair=page.locator('.cue-pair').bounding_box()
                     groups=[page.locator('.journey-people').bounding_box(),page.locator('.bring-items').bounding_box()]
-                    assert abs(groups[0]['y']-groups[1]['y'])<1
-                    assert groups[0]['x']+groups[0]['width']<=groups[1]['x']+1
+                    if page.viewport_size['height']>page.viewport_size['width'] and page.viewport_size['width']<=620:
+                        assert groups[1]['y']>=groups[0]['y']+groups[0]['height']
+                    else:
+                        assert abs(groups[0]['y']-groups[1]['y'])<1
+                        assert groups[0]['x']+groups[0]['width']<=groups[1]['x']+1
                     assert groups[0]['y']>=pair['y']+pair['height']
                     for selector in ['.person-card img','.bring-card img']:
                         boxes=[image.bounding_box() for image in page.locator(selector).all()]
@@ -131,10 +139,13 @@ def run(engine):
                     page.set_viewport_size({'width':width,'height':height});assert_aligned()
                 page.screenshot(path='/tmp/transition-cues-landscape.png',full_page=False)
                 page.set_viewport_size({'width':390,'height':844})
-                expect(page.get_by_role('heading',name='Turn your device')).to_be_visible()
-                expect(page.locator('.journey-content')).not_to_be_visible()
+                expect(page.locator('.journey-content')).to_be_visible()
+                expect(page.locator('.orientation-notice')).to_have_count(0)
+                assert_aligned()
+                page.locator('.bring-card').last.scroll_into_view_if_needed()
+                expect(page.locator('.bring-card').last).to_be_in_viewport()
                 page.screenshot(path='/tmp/transition-cues-portrait.png',full_page=False)
-                page.reload();expect(page.get_by_role('heading',name='Turn your device')).to_be_visible()
+                page.reload();expect(page.locator('.journey-content')).to_be_visible()
                 page.set_viewport_size({'width':1024,'height':768})
                 expect(page.locator('.journey-content')).to_be_visible();assert_aligned()
                 # Deterministic time verifies that a fifth late tap cannot exit.
@@ -150,7 +161,7 @@ def run(engine):
                 page.reload();expect(page.locator('#start')).not_to_be_visible()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, one-step wizard, thumbnail summary and editing, back navigation, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, one-step wizard, thumbnail summary and editing, back navigation, optional-item skip, conditional start button, accessible navigation, portrait and landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

@@ -40,11 +40,11 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-The gear icon at the top right opens **Settings**, with **Add photos** selected by default. The Settings title sits at the right of its header. Its picture icon shows the upload form and existing library. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use the chevron back button at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs still open Add photos.
+The gear icon at the top right opens **Settings**, with **Add photos** selected by default. The Settings title sits at the right of its header. **Add photos** contains only the upload form. **Manage photos** contains the category tabs, saved pictures and crop, rename, transfer, reorder and delete actions. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use the chevron back button at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs open Manage photos.
 
 No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
 
-In **Settings → Add photos**, choose a photo, enter its name, then choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
+In **Settings → Add photos**, choose a photo, enter its name, then choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon and add it. Open **Manage photos** and use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
 ## Manage existing pictures
 
@@ -72,7 +72,7 @@ The planner has three pages. **Where are we going?** shows Places with no subtit
 
 After the first place is selected, the opening title and description are replaced by small thumbnails of your choices. The thumbnails update as you select or deselect pictures. Use the chevron to return to the previous step, or tap a thumbnail to edit that category. Earlier choices are retained when navigating back. **Show the plan** appears after choosing a place and becomes available once transport is selected; both optional categories may be left empty.
 
-The journey appears only in landscape. In portrait, a **Turn your device** prompt appears; rotate the device to see the same saved journey. Destination and transport photos stay aligned, with **To:** and **By:** beside their names. Long names expand downward. People and bring-along items appear in groups beside each other below the main photos; larger groups may wrap and the display can scroll.
+The journey appears in both portrait and landscape. On portrait phones, the People and Items groups stack to use the available width. Destination and transport photos stay aligned, with **To:** and **By:** beside their names. Long names expand downward. People and bring-along items appear in groups beside each other below the main photos; larger groups may wrap and the display can scroll.
 
 Tap the display five times within three seconds to return directly to the plan choices. There is no PIN prompt. Fewer taps, or taps spread over longer than three seconds, keep the plan on screen. Refreshing restores the journey, including its selected photos, in the same browser and at the same server address. Different hostnames/ports have separate browser storage.
 

@@ -25,19 +25,19 @@ function frame(content, route) {
 function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>${extra}</div>`; }
 
 function settingsHeader(section) {
-  return `<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
+  return `<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['library','Manage photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
 }
 function wireSettingsSections(section) {
   const tabs=[...app.querySelectorAll('[data-settings-section]')];
   function selectTab(tab) {
-    const target=tab.dataset.settingsSection==='photos'?'#settings':'#settings-more';
+    const target={photos:'#settings',library:'#settings-manage',more:'#settings-more'}[tab.dataset.settingsSection];
     if(tab.dataset.settingsSection===section){tab.focus();return;}
     settingsTabFocus=true;location.hash=target;
   }
   tabs.forEach((tab,index)=>{
     tab.onclick=()=>selectTab(tab);
     tab.onkeydown=e=>{
-      const next={ArrowLeft:(index+1)%2,ArrowRight:(index+1)%2,Home:0,End:1}[e.key];
+      const next={ArrowLeft:(index+tabs.length-1)%tabs.length,ArrowRight:(index+1)%tabs.length,Home:0,End:tabs.length-1}[e.key];
       if(next===undefined)return;
       e.preventDefault();selectTab(tabs[next]);
     };
@@ -52,7 +52,7 @@ function empty(kind) {
     items:['＋','What shall we bring?','photos of things to take, like a drink, headphones or a favourite toy','an item'],
     people:['☺','Who is coming along?','a photo of someone who joins your journeys','a person']
   }[kind];
-  return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#manage">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
+  return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#settings">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
 }
 const planKinds=['places','transport','people','items'];
 function renderChoose(focusStep=false) {
@@ -125,7 +125,7 @@ function renderLocked() {
   document.body.classList.add('lock-active');
   const items = locked.items || [];
   const people = locked.people || [];
-  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="orientation-notice" role="status"><span aria-hidden="true">↻</span><h1>Turn your device</h1><p>Turn to landscape to see the plan.</p></div><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair">${['places','transport'].map((kind,i)=>`<figure class="cue-card"><img src="${esc(locked[kind].image)}" alt="${esc(locked[kind].name)}" draggable="false"><figcaption><span class="cue-label">${i===0?'To:':'By:'}</span><span class="cue-name">${esc(locked[kind].name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">Coming with us…</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing…</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
+  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair">${['places','transport'].map((kind,i)=>`<figure class="cue-card"><img src="${esc(locked[kind].image)}" alt="${esc(locked[kind].name)}" draggable="false"><figcaption><span class="cue-label">${i===0?'To:':'By:'}</span><span class="cue-name">${esc(locked[kind].name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">Coming with us…</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing…</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
   $('#lockedSurface').addEventListener('contextmenu', e=>e.preventDefault());
   $('#lockedSurface').onclick = () => {
     const now = Date.now(); taps = taps.filter(t=>now-t<3000); taps.push(now);
@@ -138,13 +138,15 @@ const uploadCategories = [
   ['items','Items','<circle cx="6.5" cy="5" r="3"/><circle cx="17.5" cy="5" r="3"/><ellipse cx="12" cy="18" rx="5" ry="4"/><circle cx="7" cy="20" r="2.5"/><circle cx="17" cy="20" r="2.5"/><circle cx="12" cy="10" r="6"/><ellipse cx="12" cy="12" rx="2" ry="1.5"/><path d="M9 9h.01M15 9h.01"/>'],
   ['people','People','<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/>']
 ];
-function renderManage() {
-  frame(settingsHeader('photos')+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-photos">`+
-    `<div class="management"><section class="panel" aria-label="Upload a picture"><form id="uploadForm"><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${categoryChoices('kind',category)}</div></fieldset><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div></section>`, 'settings');
-  wireSettingsSections('photos');
+function renderManage(section='photos') {
+  frame(settingsHeader(section)+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-${section}">`+
+    `${section==='photos'?`<div class="add-photos"><section class="panel" aria-label="Upload a picture"><form id="uploadForm"><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${categoryChoices('kind',category)}</div></fieldset><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section></div>`:`<div class="photo-library"><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`}</section>`, 'settings');
+  wireSettingsSections(section);
+  if(section==='library'){
+    app.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{category=button.dataset.tab;renderManage('library');});
+    renderLibrary();return;
+  }
   const uploadKind=()=>$('#uploadForm input[name="kind"]:checked').value;
-  app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{category=b.dataset.tab;renderManage();});
-  renderLibrary();
   let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0;
   const uploadForm=$('#uploadForm');
   let wasPerson = uploadKind()==='people';
@@ -279,7 +281,7 @@ $('#editForm').onsubmit=async e=>{
     const body=editing.action==='rename'?{kind:editing.kind,id:editing.id,sourceName:editing.sourceName,name:$('#editName').value.trim()}:{kind:editing.kind,id:editing.id,targetKind:target};
     await api(editing.action,body);await refresh();
     if(target)category=target;
-    $('#editDialog').close();renderManage();
+    $('#editDialog').close();renderManage('library');
     app.querySelector(`[data-${editing.action}="${editing.id}"]`)?.focus({preventScroll:true});
     toast(editing.action==='rename'?'Name updated.':'Picture moved to its new category.');
   } catch(error){$('#editError').textContent=error.message;}
@@ -309,7 +311,7 @@ function renderLibrary() {
     button.disabled=true;
     try { await openCrop(item.originalImage || item.image, kind==='people', async image=>{
       await api('crop',{kind,id:item.id,sourceImage:item.image,image});
-      await refresh();renderManage();toast('Cropped picture saved. Locked journeys keep their current picture.');
+      await refresh();renderManage('library');toast('Cropped picture saved. Locked journeys keep their current picture.');
     }); } catch(error) { toast(error.message); }
     finally { button.disabled=false; }
   });
@@ -317,7 +319,7 @@ function renderLibrary() {
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.remove);pendingDelete={kind:category,id:item.id};$('#deleteText').textContent=`Remove “${item.name}” from the library? An already locked journey will keep its picture until it is finished.`;$('#deleteDialog').showModal();});
 }
 $('#deleteCancel').onclick=()=>$('#deleteDialog').close();
-$('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage();toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
+$('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage('library');toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
 function renderSettings() {
   frame(settingsHeader('more')+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-more"><div class="settings-grid"><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section></div></section>`, 'settings');
   wireSettingsSections('more');
@@ -328,7 +330,7 @@ async function route() {
   if($('#planDialog').open)$('#planDialog').close();
   if(locked){renderLocked();return;}
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
-  if(view==='manage'||view==='settings')renderManage();else if(view==='settings-more')renderSettings();else renderChoose();
+  if(view==='settings')renderManage();else if(view==='manage'||view==='settings-manage')renderManage('library');else if(view==='settings-more')renderSettings();else renderChoose();
 }
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.21
+
+- Restore the journey display in portrait, with responsive photos and companion groups.
+- Add a thin black border to the top-left app icon.
+- Separate Add photos and Manage photos into distinct Settings sections, alongside More settings.
+
 ## 1.0.20
 
 - Replace all mitten icon exports and Home Assistant wordmark artwork with the supplied v3 pack.

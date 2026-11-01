@@ -34,7 +34,7 @@ def run():
                 phone = browser.new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True)
                 mobile = phone.new_page()
                 mobile.on('pageerror', lambda error: errors.append(str(error)))
-                mobile.goto(url + '/#manage')
+                mobile.goto(url + '/#settings')
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Test images are generated within the browser, never shipped in the real library.
                 for kind, name, color in [('places','Park','#9caf88'),('transport','Bus','#ddbd86'),('items','Drink','#a8c5d6'),('items','Headphones','#c5b5d3'),('items','Coat','#d7b4a2'),('items','Toy','#c0cdaa'),('items','Bag','#e0d1a2')]:
@@ -43,7 +43,11 @@ def run():
                     mobile.locator('#name').fill(name)
                     mobile.get_by_role('radio',name={'places':'Place','transport':'Transport','items':'Items','people':'People'}[kind],exact=True).check()
                     mobile.locator('#uploadButton').click()
+                    expect(mobile.locator('#name')).to_have_value('')
+                    mobile.get_by_role('tab',name='Manage photos',exact=True).click()
                     expect(mobile.locator('.library-item strong', has_text=name)).to_be_visible()
+                    mobile.get_by_role('tab',name='Add photos',exact=True).click()
+                mobile.get_by_role('tab',name='Manage photos',exact=True).click()
                 mobile.screenshot(path='/tmp/transition-cues-phone.png', full_page=True)
                 assert mobile.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Phone layout overflows'
                 page.reload()
@@ -94,10 +98,10 @@ def run():
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Locked layout overflows horizontally'
-                    if height>width:
-                        expect(page.locator('.orientation-notice')).to_be_visible()
-                        expect(page.locator('.cue-pair')).not_to_be_visible()
-                        continue
+                    expect(page.locator('.journey-content')).to_be_visible()
+                    expect(page.locator('.orientation-notice')).to_have_count(0)
+                    page.locator('.bring-card').last.scroll_into_view_if_needed()
+                    expect(page.locator('.bring-card').last).to_be_in_viewport()
                     assert page.locator('.bring-items').evaluate('(items)=>items.getBoundingClientRect().top >= document.querySelector(".cue-pair").getBoundingClientRect().bottom'), 'Items must be below the main photos'
                 page.set_viewport_size({'width':1280,'height':900})
                 page.screenshot(path='/tmp/transition-cues-locked.png', full_page=True)

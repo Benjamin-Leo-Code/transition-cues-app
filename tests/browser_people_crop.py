@@ -31,13 +31,14 @@ def run(engine):
                 expect(page.get_by_text('Familiar pictures. A little more certainty.',exact=True)).to_have_count(0)
                 phone=browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
                 mobile=phone.new_page();mobile.on('pageerror',lambda e:errors.append(str(e)))
-                mobile.goto(url+'/#manage')
+                mobile.goto(url+'/#settings')
                 expect(mobile.locator('#uploadForm')).to_be_visible()
                 # Three colour bands make a crop's actual output measurable.
                 png=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');['#d00000','#00b000','#0000d0'].forEach((color,i)=>{x.fillStyle=color;x.fillRect(i*200,0,200,400)});return c.toDataURL('image/png').split(',')[1]}''')
                 def dimensions(src):
                     return mobile.evaluate('''async src=>{const i=new Image();i.src=src;await i.decode();return [i.width,i.height]}''',src)
                 def upload(kind,name,crop=False):
+                    mobile.get_by_role('tab',name='Add photos',exact=True).click()
                     mobile.get_by_role('radio',name={'places':'Place','transport':'Transport','items':'Items','people':'People'}[kind],exact=True).check();mobile.locator('#name').fill(name)
                     mobile.locator('#photo').set_input_files({'name':'test.png','mimeType':'image/png','buffer':base64.b64decode(png)})
                     expect(mobile.locator('#photoPreview')).to_be_visible()
@@ -54,6 +55,8 @@ def run(engine):
                         mobile.locator('#cropSave').click()
                         expect(mobile.locator('#cropDialog')).not_to_be_visible()
                     mobile.locator('#uploadButton').click()
+                    expect(mobile.locator('#name')).to_have_value('')
+                    mobile.get_by_role('tab',name='Manage photos',exact=True).click()
                     expect(mobile.locator('.library-item strong',has_text=name)).to_be_visible()
                     saved=mobile.evaluate('''async ({kind,name})=>{const s=await(await fetch('/api/state')).json();return s[kind].find(i=>i.name===name)}''',{'kind':kind,'name':name})
                     assert dimensions(saved['image'])==([200,200] if crop else [400,400])
@@ -90,12 +93,15 @@ def run(engine):
                 assert pixel(bus['image'],580,300)[2]>180  # Original right edge still visible.
                 # Full and partial transparency must enable the picker even without zooming out.
                 transparent=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const x=c.getContext('2d');x.fillStyle='#d00000';x.fillRect(0,0,200,400);x.fillStyle='rgba(255,255,255,.5)';x.fillRect(200,0,200,400);return c.toDataURL('image/png').split(',')[1]}''')
+                mobile.get_by_role('tab',name='Add photos',exact=True).click()
                 mobile.get_by_role('radio',name='Place',exact=True).check();mobile.locator('#name').fill('Transparent symbol')
                 mobile.locator('#photo').set_input_files({'name':'transparent.png','mimeType':'image/png','buffer':base64.b64decode(transparent)})
                 mobile.locator('#cropUpload').click()
                 expect(mobile.locator('#cropBackgroundGroup')).to_be_visible()
                 mobile.locator('#cropBackground').fill('#2468ac');mobile.locator('#cropSave').click()
                 mobile.locator('#uploadButton').click()
+                expect(mobile.locator('#name')).to_have_value('')
+                mobile.get_by_role('tab',name='Manage photos',exact=True).click()
                 expect(mobile.locator('.library-item strong',has_text='Transparent symbol')).to_be_visible()
                 symbol=mobile.evaluate("async()=>{const s=await(await fetch('/api/state')).json();return s.places.find(i=>i.name==='Transparent symbol')}")
                 assert dimensions(symbol['image'])==[400,400]
@@ -108,6 +114,7 @@ def run(engine):
                 mobile.locator('#cropCancel').click()
 
                 # Partial alpha on its own also enables the colour picker at fill zoom.
+                mobile.get_by_role('tab',name='Add photos',exact=True).click()
                 partial=mobile.evaluate('''()=>{const c=document.createElement('canvas');c.width=c.height=100;const x=c.getContext('2d');x.fillStyle='rgba(255,0,0,.5)';x.fillRect(0,0,100,100);return c.toDataURL('image/png').split(',')[1]}''')
                 mobile.locator('#photo').set_input_files({'name':'partial.png','mimeType':'image/png','buffer':base64.b64decode(partial)})
                 mobile.locator('#cropUpload').click()
@@ -165,10 +172,8 @@ def run(engine):
                 for width,height in [(1280,900),(1024,768),(768,1024),(390,844)]:
                     page.set_viewport_size({'width':width,'height':height})
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-                    if height>width:
-                        expect(page.locator('.orientation-notice')).to_be_visible()
-                        expect(page.locator('.cue-pair')).not_to_be_visible()
-                        continue
+                    expect(page.locator('.journey-content')).to_be_visible()
+                    expect(page.locator('.orientation-notice')).to_have_count(0)
                     for photo in page.locator('.cue-card img,.bring-card img').all():
                         bounds=photo.bounding_box()
                         assert abs(bounds['width']-bounds['height'])<1,bounds
