@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.24
+
+- Add category glyphs above the selected place, transport, first person and first item.
+- Keep selected pictures in one horizontally scrollable row.
+
 ## 1.0.23
 
 - Remove the People selection counter and simplify the Items counter to x/4.

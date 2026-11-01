@@ -111,6 +111,20 @@ def run(engine):
                     for item_kind,name in names:
                         if kind==item_kind:page.get_by_role('button',name=name,exact=True).click()
                 expect(page.locator('.plan-thumbnail')).to_have_count(6)
+                # A narrow phone keeps all selections on one line and scrolls within the row.
+                page.set_viewport_size({'width':320,'height':844})
+                expect(page.locator('.plan-category svg')).to_have_count(4)
+                boxes=[thumb.bounding_box() for thumb in page.locator('.plan-thumbnail').all()]
+                assert max(box['y'] for box in boxes)-min(box['y'] for box in boxes)<1
+                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollWidth > row.clientWidth')
+                assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+                page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft = row.scrollWidth')
+                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft > 0')
+                page.locator('[data-edit-kind="items"]').last.click()
+                expect(page.locator('#itemsHeading')).to_be_focused()
+                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft > 0')
+                page.screenshot(path='/tmp/readysteady-scrolling-selections.png',full_page=True)
+                page.set_viewport_size({'width':1280,'height':900})
                 page.locator('[data-edit-step="0"]').click()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','0')
                 expect(page.locator('[data-kind="places"][aria-pressed="true"]')).to_have_count(1)
