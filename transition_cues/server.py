@@ -88,13 +88,13 @@ class Handler(BaseHTTPRequestHandler):
             name = path.removeprefix('/images/')
         else:
             directory = self.server.web
-            name = 'index.html' if path in ('/', '/manage', '/settings') else path.lstrip('/')
+            name = 'index.html' if path in ('/', '/manage', '/settings') else 'icons/icon-192.png' if path == '/icon.svg' else path.lstrip('/')
         target = (directory / name).resolve()
         if not target.is_relative_to(directory.resolve()) or not target.is_file():
             self.reply(404, {'error': 'Not found.'})
             return
         mime = {'.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
-                '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml'}.get(target.suffix)
+                '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml'}.get(target.suffix)
         if not mime:
             self.reply(404, {'error': 'Not found.'})
             return

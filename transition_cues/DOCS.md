@@ -20,7 +20,7 @@ ReadySteady uses **Transition Cues** as its subtitle. Updating from the former T
 
 ## Add to your Home Screen or Dock
 
-The app includes Apple touch icons and a web app manifest with regular and maskable PNG icons, all using the green ReadySteady arrow logo.
+The app includes Apple touch icons and a web app manifest with regular and maskable PNG icons, all using the supplied green mitten artwork on its ivory background.
 
 - **iPhone/iPad:** open the app’s address in Safari, choose **Share → Add to Home Screen**, and enable **Open as Web App** if that option appears.
 - **Mac:** open the address in Safari, then choose **File → Add to Dock** (macOS Sonoma or later). See [Apple’s instructions](https://support.apple.com/104996).
@@ -28,7 +28,7 @@ The app includes Apple touch icons and a web app manifest with regular and maska
 
 Reload the app after updating before adding it. An existing shortcut or Dock app may retain its old name or icon; rename the shortcut or add it again if necessary. Do not uninstall the Home Assistant add-on to refresh an icon. Photos and shared settings stay on the server. A newly created standalone app can have separate browser storage for the saved journey and splash preference. The Home Assistant server must remain reachable; this update adds install metadata and icons, not offline hosting.
 
-The custom repository also includes Home Assistant’s `icon.png` and `logo.png` assets for its app store/list and detail page, following [Home Assistant’s artwork format](https://contributors.home-assistant.io/apps/guides/presentation/). After updating, refresh the app store/repository and reload Home Assistant if cached artwork remains. Actual Home Screen/Dock artwork and Home Assistant’s interface need checking on your devices; automated checks validate the manifest and served image files.
+The same mitten artwork appears in the site header. The custom repository also includes Home Assistant’s `icon.png` and `logo.png` assets for its app store/list and detail page, following [Home Assistant’s artwork format](https://contributors.home-assistant.io/apps/guides/presentation/). After updating, refresh the app store/repository and reload Home Assistant if cached artwork remains. Actual Home Screen/Dock artwork and Home Assistant’s interface need checking on your devices; automated checks validate the manifest and served image files.
 
 ## Moving from another repository
 

@@ -71,6 +71,15 @@ class AppTests(unittest.TestCase):
             self.assertTrue(content.startswith(b'\x89PNG\r\n\x1a\n'))
             self.assertEqual(struct.unpack('>II', content[16:24]), tuple(map(int, icon['sizes'].split('x'))))
 
+    def test_legacy_icon_and_ico_favicon_use_current_artwork(self):
+        status, legacy, _ = self.request('/icon.svg')
+        self.assertEqual(status, 200)
+        self.assertTrue(legacy.startswith(b'\x89PNG\r\n\x1a\n'))
+        self.assertEqual(legacy, self.request('/icons/icon-192.png')[1])
+        status, favicon, _ = self.request('/favicon.ico')
+        self.assertEqual(status, 200)
+        self.assertTrue(favicon.startswith(b'\x00\x00\x01\x00'))
+
     def test_upload_read_delete_and_persistence(self):
         item = self.add()
         self.add('transport', 'Bus')

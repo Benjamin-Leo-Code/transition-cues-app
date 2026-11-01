@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.19
+
+- Use the supplied mitten artwork for the site logo, browser favicons, Apple touch icon, web app icons, and Home Assistant app icon and wordmark.
+- Version icon URLs to refresh browser caches and serve the new artwork for legacy icon requests.
+- Keep the ReadySteady name, Transition Cues subtitle, installation and saved data unchanged.
+
 ## 1.0.18
 
 - Remove the opening subtitle and numbered selection headings.
