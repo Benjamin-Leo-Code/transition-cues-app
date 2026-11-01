@@ -58,12 +58,15 @@ def run(engine):
                 page.reload()
                 expect(page.locator('[data-kind="places"]')).to_have_count(2)
                 expect(page.get_by_role('heading',name='Where are we going?',exact=True)).to_be_visible()
+                expect(page.locator('#planStep p')).to_have_count(0)
+                expect(page.locator('.step-number')).to_have_count(0)
                 expect(page.locator('[data-kind="transport"],[data-kind="items"],[data-kind="people"]')).to_have_count(0)
                 expect(page.locator('#start')).not_to_be_visible()
                 page.screenshot(path='/tmp/readysteady-step-places.png',full_page=True)
                 page.get_by_role('button',name=names[0][1],exact=True).click()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','1')
                 expect(page.locator('[data-kind="places"]')).to_have_count(0)
+                expect(page.get_by_role('heading',name='How are we travelling',exact=True)).to_be_visible()
                 expect(page.get_by_role('heading',name='Where are we going?',exact=True)).to_have_count(0)
                 expect(page.locator('.plan-thumbnail')).to_have_count(1)
                 page.screenshot(path='/tmp/readysteady-step-transport.png',full_page=True)
@@ -74,8 +77,13 @@ def run(engine):
                 page.get_by_role('button',name='Bus',exact=True).click()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','2')
                 expect(page.locator('.plan-thumbnail')).to_have_count(2)
-                page.locator('#nextStep').click()
-                expect(page.locator('#planStep')).to_have_attribute('data-step','3')
+                expect(page.get_by_role('heading',name='Who is coming along?',exact=True)).to_be_visible()
+                expect(page.get_by_role('heading',name='What is coming with us',exact=True)).to_be_visible()
+                expect(page.locator('#planStep .optional-label')).to_have_count(2)
+                expect(page.get_by_text('Choose up to 4 items',exact=True)).to_be_visible()
+                assert page.locator('[data-choice-group="people"]').bounding_box()['y']<page.locator('[data-choice-group="items"]').bounding_box()['y']
+                expect(page.locator('.step-number')).to_have_count(0)
+                expect(page.locator('#nextStep')).to_have_count(0)
                 # Only the current category is rendered; mixed-length card names remain aligned.
                 for width,height in [(390,844),(768,1024),(1024,768),(1280,900)]:
                     page.set_viewport_size({'width':width,'height':height})
@@ -86,7 +94,7 @@ def run(engine):
                         a,b=[photo.bounding_box() for photo in photos]
                         assert abs(a['y']-b['y'])<1,(kind,width,'photo alignment',a,b)
                         assert abs(captions[0].bounding_box()['y']-captions[1].bounding_box()['y'])<1,(kind,width,'name alignment')
-                        assert page.locator('[data-kind]').count()==2
+                        assert page.locator('[data-kind]').count()==(4 if kind in ['items','people'] else 2)
                 open_step(page,'items')
                 page.get_by_role('button',name='Drink',exact=True).click()
                 expect(page.locator('.plan-thumbnail')).to_have_count(3)

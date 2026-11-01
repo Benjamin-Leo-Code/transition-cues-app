@@ -32,7 +32,7 @@ def show_plan(page):
 
 
 def open_step(page, kind):
-    target=['places','transport','items','people'].index(kind)
+    target={'places':0,'transport':1,'people':2,'items':2}[kind]
     page.locator('#planStep').wait_for()
     current=int(page.locator('#planStep').get_attribute('data-step'))
     while current>target:
@@ -42,6 +42,4 @@ def open_step(page, kind):
         if current<2:
             key=['places','transport'][current]
             page.locator(f'[data-kind="{key}"][aria-pressed="true"]').click()
-        else:
-            page.locator('#nextStep').click()
         current=int(page.locator('#planStep').get_attribute('data-step'))

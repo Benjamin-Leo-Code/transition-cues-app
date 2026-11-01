@@ -68,7 +68,7 @@ Crops keep the existing picture's name and category. Images on an already-locked
 
 ## Plan a journey
 
-The planner shows only one category at a time. It starts with Places; choosing a place advances to Transport, and choosing transport advances to Items. Select up to four items, then use **Continue to People** (or **No items to bring**). Choose any people, or leave that step empty. People has no four-person cap.
+The planner has three pages. **Where are we going?** shows Places with no subtitle or numbered heading. Selecting a place opens **How are we travelling**. Selecting transport opens the combined final page: **Who is coming along?** with People pictures, then **What is coming with us** with item pictures. Both groups are labelled **Optional**, with **Choose up to 4 items** beneath the Items heading. People has no four-person cap. Tap a selected picture again to deselect it.
 
 After the first place is selected, the opening title and description are replaced by small thumbnails of your choices. The thumbnails update as you select or deselect pictures. Use the chevron to return to the previous step, or tap a thumbnail to edit that category. Earlier choices are retained when navigating back. **Show the plan** appears after choosing a place and becomes available once transport is selected; both optional categories may be left empty.
 

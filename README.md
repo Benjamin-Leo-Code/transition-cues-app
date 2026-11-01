@@ -24,7 +24,7 @@ No GitHub token is needed for this public repository. You do not need to copy fi
 
 ## Use
 
-Choose a place, then transport, one step at a time. Small thumbnails at the top show your choices; use the back arrow or tap a thumbnail to edit an earlier choice. Optionally select up to four bring-along items, continue to People, and select anyone joining you. Tap **Show the plan** when ready. The locked display shows the place and transport first, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey appears in landscape; portrait shows a **Turn your device** prompt. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
+Choose a place, then transport, one step at a time. Small thumbnails at the top show your choices; use the back arrow or tap a thumbnail to edit an earlier choice. On the final page, optionally select people first and up to four bring-along items beneath them. Tap **Show the plan** when ready. The locked display shows the place and transport first, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey appears in landscape; portrait shows a **Turn your device** prompt. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
 
 On a phone, open the same server address and choose **Settings → Add photos** to upload, name, browse and remove pictures in all four categories. Use **Crop photo** before uploading or beside an existing library picture to frame the image. People have a circular preview; drag, zoom or use the position sliders to centre each face. Use **Settings → More settings** to add a **Back to main screen** link in the parent-screen navigation. The return link can point to a dashboard or another application.
 
@@ -56,6 +56,7 @@ Screenshots use coloured test placeholders, not family photographs:
 
 - [Tablet selection screen](docs/screenshots/picker.png)
 - [Transport selection with thumbnail summary](docs/screenshots/transport.png)
+- [Combined People and Items page](docs/screenshots/companions.png)
 - [More settings](docs/screenshots/settings.png)
 - [Portrait rotation prompt](docs/screenshots/portrait.png)
 - [Locked display with people and bring-along items](docs/screenshots/locked.png)

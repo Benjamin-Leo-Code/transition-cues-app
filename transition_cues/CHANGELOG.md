@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.18
+
+- Remove the opening subtitle and numbered selection headings.
+- Use large serif titles for Where are we going? and How are we travelling.
+- Combine People and Items into one final page: Who is coming along? followed by What is coming with us, with Optional labels and Choose up to 4 items guidance.
+- Keep selected thumbnails, previous-step navigation, optional selections and the four-item cap.
+
 ## 1.0.17
 
 - Move Settings into the header on the right, with an accessible chevron-only back control on the left. Keep only the cog on the plan screen.

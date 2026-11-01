@@ -54,24 +54,31 @@ function empty(kind) {
   }[kind];
   return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#manage">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
 }
-const planKinds=['places','transport','items','people'];
+const planKinds=['places','transport','people','items'];
 function renderChoose(focusStep=false) {
   for(const kind of ['places','transport'])if(selected[kind])selected[kind]=state[kind].find(item=>item.id===selected[kind].id)||null;
   selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
   selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
   if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];planStep=0;}
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
-  const kind=planKinds[planStep], multi=planStep>=2;
-  const thumbnails=planKinds.flatMap((key,index)=>(Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[]).map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${index}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`)).join('');
-  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections">${planStep>0?`<button id="previousStep" type="button" class="step-back" aria-label="Previous selection" title="Previous selection">${backIcon}</button>`:''}<div class="plan-thumbnails">${thumbnails}</div></div>`:intro('Where are we going?','Choose a place, how you’ll get there, and anything to bring along.');
-  frame(progress+`<section class="step" id="planStep" data-step="${planStep}" aria-labelledby="planHeading"><div class="step-heading"><div class="step-title"><h2 id="planHeading" tabindex="-1"><span class="step-number">${planStep+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][planStep]}</h2>${multi?'<p class="step-optional">Optional</p>':''}</div>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items'?`${selected.items.length} of ${MAX_BRING_ITEMS} selected`:`${selected.people.length} selected`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items, then continue to People.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${state[kind].length?`<div class="grid">${state[kind].map(item=>{
-    const active=multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
-    const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
-    return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(item.name)}</span></button>`;
-  }).join('')}</div>`:empty(kind)}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}>${planStep===2?`<button id="nextStep" type="button" class="secondary">${selected.items.length?'Continue to People':'No items to bring'} <span aria-hidden="true">→</span></button>`:''}<button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose');
+  planStep=Math.min(planStep,2);
+  const thumbnails=planKinds.flatMap((key,index)=>(Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[]).map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`)).join('');
+  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections">${planStep>0?`<button id="previousStep" type="button" class="step-back" aria-label="Previous selection" title="Previous selection">${backIcon}</button>`:''}<div class="plan-thumbnails">${thumbnails}</div></div>`:'';
+  function cards(kind) {
+    const multi=kind==='people'||kind==='items';
+    return state[kind].length?`<div class="grid" data-choice-group="${kind}">${state[kind].map(item=>{
+      const active=multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
+      const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
+      return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(item.name)}</span></button>`;
+    }).join('')}</div>`:empty(kind);
+  }
+  const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
+  const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div>${planStep===2?`<small id="peopleCount" role="status">${selected.people.length} selected</small>`:''}</div>`;
+  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length} of ${MAX_BRING_ITEMS} selected</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
+  frame(progress+`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose');
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
-    const item=state[kind].find(x=>x.id===button.dataset.id);
-    if(multi){
+    const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
+    if(kind==='people'||kind==='items'){
       if(selected[kind].some(x=>x.id===item.id))selected[kind]=selected[kind].filter(x=>x.id!==item.id);
       else if(kind==='people'||selected.items.length<MAX_BRING_ITEMS)selected[kind].push(item);
       else return;
@@ -79,8 +86,7 @@ function renderChoose(focusStep=false) {
     }else{selected[kind]=item;planStep++;renderChoose(true);}
   });
   if($('#previousStep'))$('#previousStep').onclick=()=>{planStep--;renderChoose(true);};
-  app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);renderChoose(true);});
-  if($('#nextStep'))$('#nextStep').onclick=()=>{planStep=3;renderChoose(true);};
+  app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);const kind=button.dataset.editKind;renderChoose(true);if(kind==='items'){$('#itemsHeading').focus({preventScroll:true});$('#itemsHeading').scrollIntoView({block:'start'});}});
   $('#start').onclick=()=>{
     if(!selected.places||!selected.transport)return;
     pendingJourney={places:selected.places,transport:selected.transport,items:selected.items.slice(0,MAX_BRING_ITEMS),people:[...selected.people]};
