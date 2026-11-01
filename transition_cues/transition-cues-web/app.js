@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
-let toastTimer, pendingJourney = null, pendingEdit = null, itemsReviewed = false, reorderBusy = false, settingsTabFocus = false;
+let toastTimer, pendingJourney = null, pendingEdit = null, planStep = 0, reorderBusy = false, settingsTabFocus = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
   let response;
@@ -17,14 +17,15 @@ async function api(path, data) {
 async function refresh() { state = await api('state'); state.items ??= []; state.people ??= []; }
 const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
 const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
+const backIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 function frame(content, route) {
   document.body.classList.remove('lock-active');
-  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':'<a class="back-plan secondary" href="#choose"><span aria-hidden="true">←</span> Back to plan</a>'}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['manage','Picture library',libraryIcon],['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
+  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':`<a class="back-plan header-back" href="#choose" aria-label="Back to plan" title="Back to plan">${backIcon}</a><h1 class="header-title">Settings</h1>`}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
 }
 function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>${extra}</div>`; }
 
 function settingsHeader(section) {
-  return intro('Settings')+`<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
+  return `<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
 }
 function wireSettingsSections(section) {
   const tabs=[...app.querySelectorAll('[data-settings-section]')];
@@ -53,45 +54,40 @@ function empty(kind) {
   }[kind];
   return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#manage">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
 }
-function renderChoose() {
-  for (const k of ['places','transport']) if (selected[k]) selected[k] = state[k].find(x=>x.id===selected[k].id) || null;
-  selected.items = selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
-  selected.people = selected.people.map(person=>state.people.find(x=>x.id===person.id)).filter(Boolean);
-  if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];itemsReviewed=false;}
-  if(!selected.transport){selected.items=[];selected.people=[];itemsReviewed=false;}
-  const stepReady={places:true,transport:!!selected.places,items:!!(selected.places&&selected.transport),people:!!(selected.places&&selected.transport&&(itemsReviewed||selected.items.length||!state.items.length))};
-  frame(intro('Where are we going?', 'Choose a place, how you’ll get there, and anything to bring along.', '<span class="pill">A moment of calm before you go</span>') +
-    ['places','transport','items','people'].map((kind,i)=>{
-      const multi = kind==='items' || kind==='people', ready=stepReady[kind];
-      return `<section class="step ${ready?'':'step-inactive'}" aria-disabled="${!ready}" aria-labelledby="${kind}Heading"><div class="step-heading"><div class="step-title"><h2 id="${kind}Heading"><span class="step-number">${i+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][i]}</h2>${multi?'<p class="step-optional">Optional</p>':''}</div>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items' ? `${selected.items.length} of ${MAX_BRING_ITEMS} selected` : `${selected.people.length} selected`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${!ready?`<p class="step-prerequisite">${kind==='transport'?'Choose a place first.':kind==='items'?'Choose transport first.':'Choose items or skip that step first.'}</p>`:''}${kind==='items'&&ready&&!itemsReviewed&&!selected.items.length&&state.items.length?'<button id="skipItems" type="button" class="secondary skip-items">No items to bring →</button>':''}<div class="step-options" ${ready?'':'inert'}>${state[kind].length ? `<div class="grid">${state[kind].map(x=>{
-        const active = multi ? selected[kind].some(item=>item.id===x.id) : selected[kind]?.id===x.id;
-        const atLimit = kind==='items' && !active && selected.items.length>=MAX_BRING_ITEMS;
-        return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${x.id}" aria-pressed="${active}" ${atLimit||!ready?'disabled':''}><img src="${esc(x.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(x.name)}</span></button>`;
-      }).join('')}</div>` : empty(kind)}</div></section>`;
-    }).join('')+
-    `<div class="journey-bar" ${selected.places?'':'hidden'}><div><strong>${selected.places && selected.transport ? `${esc(selected.places.name)} · ${esc(selected.transport.name)}${selected.items.length ? ` · ${selected.items.length} to bring` : ''}` : 'Choose a place and transport to continue'}</strong></div><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`, 'choose');
-  app.querySelectorAll('[data-kind]').forEach(button => button.onclick = () => {
-    const {kind,id} = button.dataset;
-    const item = state[kind].find(x=>x.id===id);
-    if(!stepReady[kind])return;
-    if(kind==='items')itemsReviewed=true;
-    if(kind==='items' || kind==='people') {
-      if(selected[kind].some(x=>x.id===id)) selected[kind]=selected[kind].filter(x=>x.id!==id);
-      else if(kind==='people' || selected.items.length<MAX_BRING_ITEMS) selected[kind].push(item);
+const planKinds=['places','transport','items','people'];
+function renderChoose(focusStep=false) {
+  for(const kind of ['places','transport'])if(selected[kind])selected[kind]=state[kind].find(item=>item.id===selected[kind].id)||null;
+  selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
+  selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
+  if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];planStep=0;}
+  else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
+  const kind=planKinds[planStep], multi=planStep>=2;
+  const thumbnails=planKinds.flatMap((key,index)=>(Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[]).map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${index}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`)).join('');
+  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections">${planStep>0?`<button id="previousStep" type="button" class="step-back" aria-label="Previous selection" title="Previous selection">${backIcon}</button>`:''}<div class="plan-thumbnails">${thumbnails}</div></div>`:intro('Where are we going?','Choose a place, how you’ll get there, and anything to bring along.');
+  frame(progress+`<section class="step" id="planStep" data-step="${planStep}" aria-labelledby="planHeading"><div class="step-heading"><div class="step-title"><h2 id="planHeading" tabindex="-1"><span class="step-number">${planStep+1}</span>${['Choose a place','Choose how to get there','Items to bring along','People'][planStep]}</h2>${multi?'<p class="step-optional">Optional</p>':''}</div>${multi?`<small id="${kind==='items'?'itemCount':'peopleCount'}" role="status">${kind==='items'?`${selected.items.length} of ${MAX_BRING_ITEMS} selected`:`${selected.people.length} selected`}</small>`:''}</div>${multi?`<p class="step-help">${kind==='items'?'Choose up to 4 items, then continue to People.':'Choose the people coming along, or leave this empty.'} Tap a selected picture again to remove it.</p>`:''}${state[kind].length?`<div class="grid">${state[kind].map(item=>{
+    const active=multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
+    const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
+    return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(item.name)}</span></button>`;
+  }).join('')}</div>`:empty(kind)}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}>${planStep===2?`<button id="nextStep" type="button" class="secondary">${selected.items.length?'Continue to People':'No items to bring'} <span aria-hidden="true">→</span></button>`:''}<button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose');
+  app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
+    const item=state[kind].find(x=>x.id===button.dataset.id);
+    if(multi){
+      if(selected[kind].some(x=>x.id===item.id))selected[kind]=selected[kind].filter(x=>x.id!==item.id);
+      else if(kind==='people'||selected.items.length<MAX_BRING_ITEMS)selected[kind].push(item);
       else return;
-    } else selected[kind] = item;
-    renderChoose();
-    app.querySelector(`[data-kind="${kind}"][data-id="${id}"]`)?.focus({preventScroll:true});
+      renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
+    }else{selected[kind]=item;planStep++;renderChoose(true);}
   });
-  if($('#skipItems'))$('#skipItems').onclick=()=>{itemsReviewed=true;renderChoose();$('#peopleHeading').scrollIntoView({block:'nearest'});};
-  $('#start').onclick = () => {
+  if($('#previousStep'))$('#previousStep').onclick=()=>{planStep--;renderChoose(true);};
+  app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);renderChoose(true);});
+  if($('#nextStep'))$('#nextStep').onclick=()=>{planStep=3;renderChoose(true);};
+  $('#start').onclick=()=>{
     if(!selected.places||!selected.transport)return;
-    pendingJourney = {places:selected.places, transport:selected.transport, items:selected.items.slice(0,MAX_BRING_ITEMS), people:[...selected.people]};
-    let skip=false;
-    try { skip=localStorage.getItem('tc-skip-plan-intro')==='true'; } catch {}
-    if(skip)beginJourney();
-    else { $('#skipPlanIntro').checked=false; $('#planDialog').showModal(); }
+    pendingJourney={places:selected.places,transport:selected.transport,items:selected.items.slice(0,MAX_BRING_ITEMS),people:[...selected.people]};
+    let skip=false;try{skip=localStorage.getItem('tc-skip-plan-intro')==='true';}catch{}
+    if(skip)beginJourney();else{$('#skipPlanIntro').checked=false;$('#planDialog').showModal();}
   };
+  if(focusStep){$('#planHeading').focus({preventScroll:true});window.scrollTo(0,0);}
 }
 function beginJourney() {
   if(!pendingJourney)return;
@@ -115,7 +111,7 @@ function finishJourney() {
   catch { toast('Allow browser storage to finish this saved plan.');return; }
   selected={places:locked.places,transport:locked.transport,items:locked.items||[],people:locked.people||[]};
   state ??= {places:[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
-  locked=null;taps=[];itemsReviewed=true;
+  locked=null;taps=[];planStep=0;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
   location.hash='choose';renderChoose();
 }

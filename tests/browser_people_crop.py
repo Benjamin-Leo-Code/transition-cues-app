@@ -9,7 +9,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan, open_step
 
 
 def run(engine):
@@ -120,7 +120,7 @@ def run(engine):
                 expect(mobile.get_by_role('button',name='Move Person B right',exact=True)).to_be_disabled()
                 mobile.get_by_role('button',name='Move Person B left',exact=True).click()
                 expect(mobile.locator('.library-item strong').first).to_have_text('Person B')
-                page.reload()
+                page.reload();page.get_by_role('button',name='Park',exact=True).click();page.get_by_role('button',name='Bus',exact=True).click();open_step(page,'people')
                 assert page.locator('[data-kind="people"] .name').all_text_contents()==['Person B','Person A']
                 mobile.get_by_role('button',name='Move Person B right',exact=True).click()
                 expect(mobile.locator('.library-item strong').first).to_have_text('Person A')
@@ -147,7 +147,10 @@ def run(engine):
                 expect(page.locator('.journey-people')).to_have_count(0)
                 for _ in range(5):page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).to_be_visible()
-                for name in ['Drink','Coat','Toy','Headphones','Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
+                open_step(page,'items')
+                for name in ['Drink','Coat','Toy','Headphones']:page.get_by_role('button',name=name,exact=True).click()
+                open_step(page,'people')
+                for name in ['Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
                 # People can be toggled independently of the four-item cap.
                 page.get_by_role('button',name='Person B',exact=True).click()
                 expect(page.locator('#peopleCount')).to_contain_text('1 selected')

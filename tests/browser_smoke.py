@@ -47,8 +47,8 @@ def run():
                 mobile.screenshot(path='/tmp/transition-cues-phone.png', full_page=True)
                 assert mobile.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Phone layout overflows'
                 page.reload()
-                page.get_by_role('button', name='Park').click()
-                page.get_by_role('button', name='Bus').click()
+                page.get_by_role('button', name='Park',exact=True).click()
+                page.get_by_role('button', name='Bus',exact=True).click()
                 # Bring-along items are optional; old saved journeys still restore.
                 expect(page.locator('#start')).to_be_enabled()
                 show_plan(page)
@@ -59,8 +59,8 @@ def run():
                 expect(page.locator('.bring-items')).to_have_count(0)
                 for _ in range(5): page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).to_be_visible()
-                page.get_by_role('button', name='Park').click()
-                page.get_by_role('button', name='Bus').click()
+                page.get_by_role('button', name='Park',exact=True).click()
+                page.get_by_role('button', name='Bus',exact=True).click()
                 for name in ['Drink','Headphones','Coat','Toy']:
                     page.get_by_role('button', name=name, exact=True).click()
                 expect(page.locator('#itemCount')).to_contain_text('4 of 4')
@@ -121,7 +121,7 @@ def run():
                 for _ in range(5): page.locator('#lockedSurface h1:visible').click()
                 expect(page.locator('#start')).not_to_be_visible()
                 expect(page.locator('#lockedSurface')).to_have_count(0)
-                expect(page.locator('#itemCount')).to_contain_text('0 of 4')
+                expect(page.locator('#itemCount')).to_have_count(0)
                 expect(page.get_by_role('button', name='Drink', exact=True)).to_have_count(0)
                 mobile.get_by_role('tab', name='More settings', exact=True).click()
                 mobile.locator('#returnUrl').fill('http://homeassistant.local:8123/lovelace/0')

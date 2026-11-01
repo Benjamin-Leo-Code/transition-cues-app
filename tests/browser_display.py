@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan, open_step
 
 
 def run(engine):
@@ -25,9 +25,13 @@ def run(engine):
                 page.goto(f'http://127.0.0.1:{server.server_port}')
                 expect(page.locator('#start')).to_be_disabled()
                 expect(page.locator('#pinDialog')).to_have_count(0)
+                expect(page.locator('.nav a')).to_have_count(1)
+                expect(page.get_by_role('link',name='Picture library',exact=True)).to_have_count(0)
                 page.get_by_role('link',name='Settings',exact=True).click()
                 expect(page.get_by_role('heading',name='Settings',exact=True)).to_be_visible()
-                expect(page.locator('.intro p')).to_have_count(0)
+                expect(page.locator('.intro')).to_have_count(0)
+                assert page.get_by_role('link',name='Back to plan',exact=True).inner_text()==''
+                assert page.locator('.header-title').bounding_box()['x']>512
                 expect(page.get_by_role('tab',name='Add photos',exact=True)).to_have_attribute('aria-selected','true')
                 expect(page.locator('#uploadForm')).to_be_visible()
                 expect(page.locator('#returnForm')).to_have_count(0)
@@ -53,32 +57,52 @@ def run(engine):
                 page.evaluate("""async names=>{for(const [kind,name] of names){const canvas=document.createElement('canvas');canvas.width=canvas.height=400;const ctx=canvas.getContext('2d');ctx.fillStyle={places:'#9caf88',transport:'#ddbd86',people:'#c5b5d3',items:'#a8c5d6'}[kind];ctx.fillRect(0,0,400,400);const image=canvas.toDataURL('image/png').split(',')[1];const r=await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})});if(!r.ok)throw Error('Fixture upload failed')}}""",names)
                 page.reload()
                 expect(page.locator('[data-kind="places"]')).to_have_count(2)
-                # Selection cards must top-align photos and name starts, even when one name wraps.
+                expect(page.get_by_role('heading',name='Where are we going?',exact=True)).to_be_visible()
+                expect(page.locator('[data-kind="transport"],[data-kind="items"],[data-kind="people"]')).to_have_count(0)
+                expect(page.locator('#start')).not_to_be_visible()
+                page.screenshot(path='/tmp/readysteady-step-places.png',full_page=True)
+                page.get_by_role('button',name=names[0][1],exact=True).click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','1')
+                expect(page.locator('[data-kind="places"]')).to_have_count(0)
+                expect(page.get_by_role('heading',name='Where are we going?',exact=True)).to_have_count(0)
+                expect(page.locator('.plan-thumbnail')).to_have_count(1)
+                page.screenshot(path='/tmp/readysteady-step-transport.png',full_page=True)
+                expect(page.locator('#start')).to_be_disabled()
+                page.locator('#previousStep').click()
+                expect(page.locator('[data-kind="places"][aria-pressed="true"]')).to_have_count(1)
+                page.get_by_role('button',name=names[0][1],exact=True).click()
+                page.get_by_role('button',name='Bus',exact=True).click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','2')
+                expect(page.locator('.plan-thumbnail')).to_have_count(2)
+                page.locator('#nextStep').click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','3')
+                # Only the current category is rendered; mixed-length card names remain aligned.
                 for width,height in [(390,844),(768,1024),(1024,768),(1280,900)]:
                     page.set_viewport_size({'width':width,'height':height})
                     for kind in ['places','transport','items','people']:
+                        open_step(page,kind)
                         photos=page.locator(f'[data-kind="{kind}"] img').all()
                         captions=page.locator(f'[data-kind="{kind}"] .name').all()
                         a,b=[photo.bounding_box() for photo in photos]
                         assert abs(a['y']-b['y'])<1,(kind,width,'photo alignment',a,b)
                         assert abs(captions[0].bounding_box()['y']-captions[1].bounding_box()['y'])<1,(kind,width,'name alignment')
-                    assert page.locator('[data-kind="places"] .name').first.bounding_box()['height']>page.locator('[data-kind="places"] .name').last.bounding_box()['height']
-                page.screenshot(path='/tmp/transition-cues-aligned-picker.png',full_page=True)
-                expect(page.locator('#start')).not_to_be_visible()
-                expect(page.get_by_role('button',name='Bus',exact=True)).to_be_disabled()
-                expect(page.get_by_role('button',name='Drink',exact=True)).to_be_disabled()
-                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_disabled()
-                page.get_by_role('button',name=names[0][1],exact=True).click()
-                expect(page.locator('#start')).to_be_visible();expect(page.locator('#start')).to_be_disabled()
-                expect(page.get_by_role('button',name='Drink',exact=True)).to_be_disabled()
-                page.get_by_role('button',name='Bus',exact=True).click()
-                expect(page.locator('#start')).to_be_enabled()
-                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_disabled()
-                page.locator('#skipItems').click()
-                expect(page.get_by_role('button',name='Person B',exact=True)).to_be_enabled()
+                        assert page.locator('[data-kind]').count()==2
+                open_step(page,'items')
+                page.get_by_role('button',name='Drink',exact=True).click()
+                expect(page.locator('.plan-thumbnail')).to_have_count(3)
+                expect(page.locator('#planStep')).to_have_attribute('data-step','2')
+                page.get_by_role('button',name='Drink',exact=True).click()
+                expect(page.locator('.plan-thumbnail')).to_have_count(2)
                 for kind in ['items','people']:
+                    open_step(page,kind)
                     for item_kind,name in names:
                         if kind==item_kind:page.get_by_role('button',name=name,exact=True).click()
+                expect(page.locator('.plan-thumbnail')).to_have_count(6)
+                page.locator('[data-edit-step="0"]').click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','0')
+                expect(page.locator('[data-kind="places"][aria-pressed="true"]')).to_have_count(1)
+                open_step(page,'people')
+                page.screenshot(path='/tmp/transition-cues-aligned-picker.png',full_page=True)
                 show_plan(page);leave_fullscreen(page)
                 def assert_aligned():
                     photos=page.locator('.cue-card img').all()
@@ -118,7 +142,7 @@ def run(engine):
                 page.reload();expect(page.locator('#start')).not_to_be_visible()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, sequential sections, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, one-step wizard, thumbnail summary and editing, back navigation, optional-item skip, conditional start button, accessible navigation, portrait prompt, landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

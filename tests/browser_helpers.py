@@ -29,3 +29,19 @@ def leave_fullscreen(page):
 def show_plan(page):
     page.locator('#start').click()
     page.locator('#planContinue').click()
+
+
+def open_step(page, kind):
+    target=['places','transport','items','people'].index(kind)
+    page.locator('#planStep').wait_for()
+    current=int(page.locator('#planStep').get_attribute('data-step'))
+    while current>target:
+        page.locator('#previousStep').click()
+        current=int(page.locator('#planStep').get_attribute('data-step'))
+    while current<target:
+        if current<2:
+            key=['places','transport'][current]
+            page.locator(f'[data-kind="{key}"][aria-pressed="true"]').click()
+        else:
+            page.locator('#nextStep').click()
+        current=int(page.locator('#planStep').get_attribute('data-step'))

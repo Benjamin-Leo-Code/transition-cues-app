@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.17
+
+- Move Settings into the header on the right, with an accessible chevron-only back control on the left. Keep only the cog on the plan screen.
+- Show one journey selection step at a time, automatically advancing after place and transport choices.
+- Replace the opening introduction with compact selected-photo thumbnails; support previous-step navigation and thumbnail editing.
+- Keep optional items and people, with an explicit continuation after selecting multiple items.
+
 ## 1.0.16
 
 - Combine photo management and settings under a Settings heading with an icon-labelled segmented control.

@@ -40,7 +40,7 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-The picture and gear icons at the top right open **Settings**, with **Add photos** selected by default. Its picture icon shows the upload form and existing library. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use **← Back to plan** at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs still open Add photos.
+The gear icon at the top right opens **Settings**, with **Add photos** selected by default. The Settings title sits at the right of its header. Its picture icon shows the upload form and existing library. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use the chevron back button at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs still open Add photos.
 
 No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
 
@@ -68,9 +68,9 @@ Crops keep the existing picture's name and category. Images on an already-locked
 
 ## Plan a journey
 
-The numbered sections enable in sequence. Choose a place to enable Transport, then choose transport to enable Items. People enables after you select an item or press **No items to bring**; if the item library is empty, People enables automatically. Deselecting the last item still allows People, since Items is optional. **Show the plan** appears after choosing a place and becomes available once transport is selected; both optional sections may be left empty.
+The planner shows only one category at a time. It starts with Places; choosing a place advances to Transport, and choosing transport advances to Items. Select up to four items, then use **Continue to People** (or **No items to bring**). Choose any people, or leave that step empty. People has no four-person cap.
 
-Choose one place and one transport picture. Optionally select zero to four items; tap a selected item to deselect it. Select any people coming along, or leave People empty. People has no four-person cap. Tap **Show the plan**.
+After the first place is selected, the opening title and description are replaced by small thumbnails of your choices. The thumbnails update as you select or deselect pictures. Use the chevron to return to the previous step, or tap a thumbnail to edit that category. Earlier choices are retained when navigating back. **Show the plan** appears after choosing a place and becomes available once transport is selected; both optional categories may be left empty.
 
 The journey appears only in landscape. In portrait, a **Turn your device** prompt appears; rotate the device to see the same saved journey. Destination and transport photos stay aligned, with **To:** and **By:** beside their names. Long names expand downward. People and bring-along items appear in groups beside each other below the main photos; larger groups may wrap and the display can scroll.
 
