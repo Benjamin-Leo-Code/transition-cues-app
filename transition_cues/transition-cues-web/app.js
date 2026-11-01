@@ -73,8 +73,8 @@ function renderChoose(focusStep=false) {
     }).join('')}</div>`:empty(kind);
   }
   const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
-  const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div>${planStep===2?`<small id="peopleCount" role="status">${selected.people.length} selected</small>`:''}</div>`;
-  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length} of ${MAX_BRING_ITEMS} selected</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
+  const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
+  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
   frame(progress+`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose');
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);

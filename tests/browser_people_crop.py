@@ -160,7 +160,7 @@ def run(engine):
                 for name in ['Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
                 # People can be toggled independently of the four-item cap.
                 page.get_by_role('button',name='Person B',exact=True).click()
-                expect(page.locator('#peopleCount')).to_contain_text('1 selected')
+                expect(page.locator('#peopleCount')).to_have_count(0)
                 page.get_by_role('button',name='Person B',exact=True).click()
                 page.screenshot(path='/tmp/transition-cues-picker.png',full_page=True)
                 show_plan(page);expect(page.locator('.person-card')).to_have_count(2)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.23
+
+- Remove the People selection counter and simplify the Items counter to x/4.
+
 ## 1.0.22
 
 - Replace all current icon assets and Home Assistant wordmark with the supplied zoomed mitten artwork, with refreshed icon URLs.
