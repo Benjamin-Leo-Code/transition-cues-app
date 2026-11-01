@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.20
+
+- Replace all mitten icon exports and Home Assistant wordmark artwork with the supplied v3 pack.
+- Refresh icon URL versions so browsers can pick up the revised artwork.
+
 ## 1.0.19
 
 - Use the supplied mitten artwork for the site logo, browser favicons, Apple touch icon, web app icons, and Home Assistant app icon and wordmark.
