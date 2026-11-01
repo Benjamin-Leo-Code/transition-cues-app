@@ -14,7 +14,7 @@ with sync_playwright() as p:
     encoded=page.evaluate('''async source=>{
       const img=new Image();img.src='data:image/png;base64,'+source;await img.decode();
       const canvas=document.createElement('canvas');canvas.width=250;canvas.height=100;
-      const context=canvas.getContext('2d');context.fillStyle='#fcf6e3';context.fillRect(0,0,250,100);
+      const context=canvas.getContext('2d');context.fillStyle='#f3e3bf';context.fillRect(0,0,250,100);
       context.drawImage(img,0,0,100,100);
       context.fillStyle='#254d43';context.font='600 22px sans-serif';context.fillText('ReadySteady',104,45);
       context.fillStyle='#5c7662';context.font='14px sans-serif';context.fillText('Transition Cues',104,68);

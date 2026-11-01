@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.22
+
+- Replace all current icon assets and Home Assistant wordmark with the supplied zoomed mitten artwork, with refreshed icon URLs.
+- Use a richer cream page background throughout the planner, Settings, splash screen and journey display, with matching web-app theme colours.
+- Change the journey People heading to With: and the Items heading to We’re bringing:.
+
 ## 1.0.21
 
 - Restore the journey display in portrait, with responsive photos and companion groups.
