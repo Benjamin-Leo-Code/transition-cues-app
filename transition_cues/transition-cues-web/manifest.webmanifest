@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Transition Cues",
-  "short_name": "Transition Cues",
-  "description": "A familiar picture of where we are going and how we will get there.",
+  "name": "ReadySteady",
+  "short_name": "ReadySteady",
+  "description": "Transition Cues \u2014 a familiar picture of where we are going and how we will get there.",
   "start_url": "/#choose",
   "scope": "/",
   "display": "standalone",

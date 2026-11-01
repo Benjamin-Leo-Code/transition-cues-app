@@ -1,7 +1,7 @@
-name: Transition Cues
-version: "1.0.14"
+name: ReadySteady
+version: "1.0.15"
 slug: transition_cues
-description: Familiar place, transport and bring-along pictures for a calm transition.
+description: Transition Cues — familiar place, transport and bring-along pictures for a calm transition.
 url: https://github.com/Benjamin-Leo-Code/transition-cues-app
 arch:
   - aarch64

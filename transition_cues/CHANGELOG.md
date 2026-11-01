@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.15
+
+- Rename the app to ReadySteady, with Transition Cues as the subtitle beneath the name.
+- Update Home Assistant branding, browser titles, installable app names, logo artwork and documentation.
+- Keep the repository URL, installation slug, data folders and browser storage keys unchanged.
+
 ## 1.0.14
 
 - Top-align selection card photos and names so multiline names expand downward without shifting adjacent photos.

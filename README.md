@@ -1,4 +1,6 @@
-# Transition Cues — Home Assistant add-on
+# ReadySteady — Home Assistant add-on
+
+Transition Cues
 
 A calm picture display for showing **where we are going**, **how we are getting there**, up to **four items to bring along**, and optional **people coming along**.
 
@@ -11,7 +13,7 @@ In Home Assistant:
 1. Open **Settings → Add-ons → Add-on Store** (or **Settings → Apps → Install app**).
 2. Open the three-dot menu → **Repositories**.
 3. Add `https://github.com/Benjamin-Leo-Code/transition-cues-app`.
-4. Find **Transition Cues**, open it and select **Install**. Home Assistant builds the add-on from this repository; the first installation can take a few minutes and requires internet access.
+4. Find **ReadySteady**, open it and select **Install**. Home Assistant builds the add-on from this repository; the first installation can take a few minutes and requires internet access.
 5. Start it. Enable **Start on boot** and **Watchdog** as desired.
 6. Select **Open Web UI**, or open `http://HOME-ASSISTANT-IP:8099` on your tablet and phone.
 7. Add your familiar photos through the **Picture library** icon. No PIN setup is needed.
@@ -40,7 +42,7 @@ This repository starts at **v1.0.0** with the full current feature set and fresh
 
 Home Assistant offers an **Update** when the repository advertises a newer add-on version. Updates are installed through Home Assistant; automatic updates are optional. Every GitHub commit is not a release. The add-on is built on your machine during installation and updates; no separate image registry is required.
 
-Photos, library entries and settings live in **`/data/transition-cues-data` inside the add-on**, separate from the application files. They survive normal updates and restarts. Include Transition Cues in Home Assistant backups. The add-on briefly stops during backups for consistency. No data is stored in `www`, `/share`, GitHub or the browser's photo storage.
+Photos, library entries and settings live in **`/data/transition-cues-data` inside the add-on**, separate from the application files. They survive normal updates and restarts. Include ReadySteady in Home Assistant backups. The add-on briefly stops during backups for consistency. No data is stored in `www`, `/share`, GitHub or the browser's photo storage.
 
 The browser stores only the current locked journey snapshot locally. Uploaded photos remain on the Home Assistant machine.
 

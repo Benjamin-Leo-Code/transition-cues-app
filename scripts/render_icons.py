@@ -17,7 +17,7 @@ with sync_playwright() as p:
           const c=document.createElement('canvas');c.width=logo?250:size;c.height=logo?100:size;
           const x=c.getContext('2d');
           if(background){x.fillStyle='#254d43';x.fillRect(0,0,c.width,c.height)}
-          if(logo){x.drawImage(img,0,0,100,100);x.fillStyle='#ffffff';x.font='600 24px sans-serif';x.fillText('Transition',106,43);x.fillText('Cues',106,72)}
+          if(logo){x.drawImage(img,0,0,100,100);x.fillStyle='#ffffff';x.font='600 22px sans-serif';x.fillText('ReadySteady',104,45);x.fillStyle='#dbe6d3';x.font='14px sans-serif';x.fillText('Transition Cues',104,68)}
           else x.drawImage(img,0,0,size,size);
           return c.toDataURL('image/png').split(',')[1];
         }''',{'svg':svg,'size':size,'background':background,'logo':logo})

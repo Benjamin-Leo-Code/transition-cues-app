@@ -1,5 +1,5 @@
 FROM python:3.12-alpine
-LABEL org.opencontainers.image.title="Transition Cues" \
+LABEL org.opencontainers.image.title="ReadySteady" \
       org.opencontainers.image.source="https://github.com/Benjamin-Leo-Code/transition-cues-app" \
       io.hass.type="addon"
 WORKDIR /app

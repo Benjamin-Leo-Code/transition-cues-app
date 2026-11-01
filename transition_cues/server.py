@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local, dependency-free Transition Cues server. Python 3.11+."""
+"""Local, dependency-free ReadySteady server. Python 3.11+."""
 import base64
 import json
 from pathlib import Path
@@ -59,7 +59,7 @@ class Store:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'TransitionCues/1'
+    server_version = 'ReadySteady/1'
 
     def reply(self, status, body, mime='application/json'):
         if mime == 'application/json':
@@ -224,7 +224,7 @@ def make_server(host, port, data, web=ROOT / 'transition-cues-web'):
 
 if __name__ == '__main__':
     server = make_server('0.0.0.0', 8099, Path('/data/transition-cues-data'))
-    print(f'Transition Cues is listening on port {server.server_port}', flush=True)
+    print(f'ReadySteady is listening on port {server.server_port}', flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
