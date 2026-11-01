@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
-let toastTimer, pendingJourney = null, pendingEdit = null, itemsReviewed = false, reorderBusy = false;
+let toastTimer, pendingJourney = null, pendingEdit = null, itemsReviewed = false, reorderBusy = false, settingsTabFocus = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
   let response;
@@ -15,14 +15,34 @@ async function api(path, data) {
   return result;
 }
 async function refresh() { state = await api('state'); state.items ??= []; state.people ??= []; }
+const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
+const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
 function frame(content, route) {
   document.body.classList.remove('lock-active');
-  const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
-  const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
-  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':'<a class="back-plan secondary" href="#choose"><span aria-hidden="true">←</span> Back to plan</a>'}<nav class="nav" aria-label="Main navigation">${[['manage','Picture library',libraryIcon],['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
+  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icon.svg" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':'<a class="back-plan secondary" href="#choose"><span aria-hidden="true">←</span> Back to plan</a>'}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['manage','Picture library',libraryIcon],['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
 }
-function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1><p>${description}</p></div>${extra}</div>`; }
+function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>${extra}</div>`; }
 
+function settingsHeader(section) {
+  return intro('Settings')+`<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
+}
+function wireSettingsSections(section) {
+  const tabs=[...app.querySelectorAll('[data-settings-section]')];
+  function selectTab(tab) {
+    const target=tab.dataset.settingsSection==='photos'?'#settings':'#settings-more';
+    if(tab.dataset.settingsSection===section){tab.focus();return;}
+    settingsTabFocus=true;location.hash=target;
+  }
+  tabs.forEach((tab,index)=>{
+    tab.onclick=()=>selectTab(tab);
+    tab.onkeydown=e=>{
+      const next={ArrowLeft:(index+1)%2,ArrowRight:(index+1)%2,Home:0,End:1}[e.key];
+      if(next===undefined)return;
+      e.preventDefault();selectTab(tabs[next]);
+    };
+  });
+  if(settingsTabFocus){$('#settingsTab-'+section).focus({preventScroll:true});settingsTabFocus=false;}
+}
 const MAX_BRING_ITEMS = 4;
 function empty(kind) {
   const content = {
@@ -117,8 +137,9 @@ const uploadCategories = [
   ['people','People','<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/>']
 ];
 function renderManage() {
-  frame(intro('Add a picture','A clear photo and a short, familiar name work best.')+
-    `<div class="management"><section class="panel" aria-label="Upload a picture"><form id="uploadForm"><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${categoryChoices('kind',category)}</div></fieldset><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`, 'manage');
+  frame(settingsHeader('photos')+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-photos">`+
+    `<div class="management"><section class="panel" aria-label="Upload a picture"><form id="uploadForm"><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${categoryChoices('kind',category)}</div></fieldset><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div></section>`, 'settings');
+  wireSettingsSections('photos');
   const uploadKind=()=>$('#uploadForm input[name="kind"]:checked').value;
   app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{category=b.dataset.tab;renderManage();});
   renderLibrary();
@@ -296,7 +317,8 @@ function renderLibrary() {
 $('#deleteCancel').onclick=()=>$('#deleteDialog').close();
 $('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage();toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
 function renderSettings() {
-  frame(intro('A few things for the grown-ups.','Keep your return link up to date.')+`<div class="settings-grid"><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section><section class="panel wide"><h2>On the tablet</h2><p>Choose a place, transport and up to four optional items to bring along, plus any people joining you, then tap “Show the plan”. To finish, tap the picture screen five times within three seconds. Turn the device to landscape to show the plan.</p><p>Use the tablet’s kiosk mode or guided access to prevent leaving the browser. Keep ReadySteady open in its own browser tab rather than embedding it inside another page.</p><p class="help">To manage pictures from your phone, open this app’s address and choose Picture library. Both devices must reach the same server. Your pictures stay on your home server.</p></section></div>`, 'settings');
+  frame(settingsHeader('more')+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-more"><div class="settings-grid"><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section></div></section>`, 'settings');
+  wireSettingsSections('more');
   $('#returnForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('settings',{returnUrl:$('#returnUrl').value.trim()});await refresh();renderSettings();toast('Return link saved.');}catch(error){$('#returnError').textContent=error.message;}finally{b.disabled=false;}};
 }
 
@@ -304,7 +326,7 @@ async function route() {
   if($('#planDialog').open)$('#planDialog').close();
   if(locked){renderLocked();return;}
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
-  if(view==='manage')renderManage();else if(view==='settings')renderSettings();else renderChoose();
+  if(view==='manage'||view==='settings')renderManage();else if(view==='settings-more')renderSettings();else renderChoose();
 }
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.

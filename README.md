@@ -26,7 +26,7 @@ No GitHub token is needed for this public repository. You do not need to copy fi
 
 Choose a place and transport, optionally select up to four bring-along items and any people joining you, then tap **Show the plan**. The locked display shows the place and transport first, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey appears in landscape; portrait shows a **Turn your device** prompt. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
 
-On a phone, open the same server address and choose **Picture library** to upload, name, browse and remove pictures in all four categories. Use **Crop photo** before uploading or beside an existing library picture to frame the image. People have a circular preview; drag, zoom or use the position sliders to centre each face. Use Settings to add a **Back to main screen** link in the parent-screen navigation. The return link can point to a dashboard or another application.
+On a phone, open the same server address and choose **Settings → Add photos** to upload, name, browse and remove pictures in all four categories. Use **Crop photo** before uploading or beside an existing library picture to frame the image. People have a circular preview; drag, zoom or use the position sliders to centre each face. Use **Settings → More settings** to add a **Back to main screen** link in the parent-screen navigation. The return link can point to a dashboard or another application.
 
 After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
 
@@ -55,6 +55,7 @@ The browser stores only the current locked journey snapshot locally. Uploaded ph
 Screenshots use coloured test placeholders, not family photographs:
 
 - [Tablet selection screen](docs/screenshots/picker.png)
+- [More settings](docs/screenshots/settings.png)
 - [Portrait rotation prompt](docs/screenshots/portrait.png)
 - [Locked display with people and bring-along items](docs/screenshots/locked.png)
 - [Phone picture library](docs/screenshots/phone.png)

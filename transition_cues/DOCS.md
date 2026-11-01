@@ -40,11 +40,11 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-Use the picture icon at the top right for **Picture library**, and the gear icon for **Settings**. Both have accessible labels and tooltips. On those pages, use **← Back to plan** at the top left to return to journey selection.
+The picture and gear icons at the top right open **Settings**, with **Add photos** selected by default. Its picture icon shows the upload form and existing library. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use **← Back to plan** at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs still open Add photos.
 
 No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
 
-In **Picture library**, choose a photo, enter its name, then choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
+In **Settings → Add photos**, choose a photo, enter its name, then choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon and add it. Use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
 ## Manage existing pictures
 

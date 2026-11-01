@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.16
+
+- Combine photo management and settings under a Settings heading with an icon-labelled segmented control.
+- Open Add photos by default; keep only Back to main screen in More settings.
+- Remove the page subtitle and On the tablet section. Keep existing picture-library links working.
+
 ## 1.0.15
 
 - Rename the app to ReadySteady, with Transition Cues as the subtitle beneath the name.

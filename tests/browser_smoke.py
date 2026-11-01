@@ -123,10 +123,11 @@ def run():
                 expect(page.locator('#lockedSurface')).to_have_count(0)
                 expect(page.locator('#itemCount')).to_contain_text('0 of 4')
                 expect(page.get_by_role('button', name='Drink', exact=True)).to_have_count(0)
-                mobile.get_by_role('link', name='Settings', exact=True).click()
+                mobile.get_by_role('tab', name='More settings', exact=True).click()
                 mobile.locator('#returnUrl').fill('http://homeassistant.local:8123/lovelace/0')
                 mobile.get_by_role('button', name='Save link').click()
                 expect(mobile.get_by_role('link', name='Back to main screen', exact=False)).to_be_visible()
+                expect(mobile.get_by_role('tab',name='More settings',exact=True)).to_have_attribute('aria-selected','true')
                 assert not errors, errors
                 browser.close()
                 print('PASS: original flows; item uploads, optional selection, four-item cap, deselection, old journey restore, item layout at tablet/phone sizes, item snapshots after refresh and cross-device deletion; no browser errors.')
