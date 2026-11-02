@@ -7,6 +7,7 @@ import tempfile
 import threading
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'transition_cues'))
 from server import make_server
+from browser_helpers import choose_pair
 from playwright.sync_api import sync_playwright, expect
 
 
@@ -26,11 +27,10 @@ def run(engine):
                 page.goto(url)
                 page.evaluate("""async()=>{const image='iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC';for(const [kind,name] of [['places','Park'],['transport','Bus']])await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})})}""")
                 def choose(target):
-                    target.get_by_role('button',name='Park',exact=True).click()
-                    target.get_by_role('button',name='Bus',exact=True).click()
+                    choose_pair(target)
                 def unlock():
                     for _ in range(5):page.locator('#lockedSurface h1:visible').click()
-                    expect(page.locator('#start')).to_be_visible()
+                    expect(page.locator('#nextStep')).to_be_visible()
                 page.reload();choose(page)
                 expect(page.get_by_text('The display locks when you start.',exact=False)).not_to_be_visible()
                 page.locator('#start').click()

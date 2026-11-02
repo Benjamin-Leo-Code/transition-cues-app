@@ -3,7 +3,6 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
-let locationCount=1;
 let toastTimer, pendingJourney = null, pendingEdit = null, planStep = 0, reorderBusy = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
@@ -27,70 +26,58 @@ function intro(title, description, extra='') { return `<div class="intro"><div><
 function settingsHeader() {
   return `<div class="settings-segments category-segments" role="tablist" aria-label="Picture categories">${uploadCategories.map(([key,label,icon])=>`<button type="button" role="tab" id="categoryTab-${key}" aria-selected="${key===category}" aria-pressed="${key===category}" aria-controls="settingsPanel" tabindex="${key===category?'0':'-1'}" data-tab="${key}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span></button>`).join('')}</div>`;
 }
-const MAX_BRING_ITEMS = 4;
 const planKinds=['places','transport','people','items'];
 const chosenLocations=()=>selected.locations||(selected.places?[selected.places]:[]);
+const chosenTransports=()=>selected.transports||(selected.transport?[selected.transport]:[]);
 function renderChoose(focusStep=false) {
-  selected.locations=chosenLocations().map(item=>state.places.find(x=>x.id===item.id)).filter(Boolean).slice(0,locationCount);
+  selected.locations=chosenLocations().map(item=>state.places.find(x=>x.id===item.id)).filter(Boolean);
   selected.places=selected.locations[0]||null;
-  if(selected.transport)selected.transport=state.transport.find(item=>item.id===selected.transport.id)||null;
-  selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
+  selected.transports=chosenTransports().map(item=>state.transport.find(x=>x.id===item.id)).filter(Boolean);
+  selected.transport=selected.transports[0]||null;
+  selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean);
   selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
-  if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];planStep=0;}
+  if(!selected.places){selected.transport=null;selected.transports=[];selected.items=[];selected.people=[];planStep=0;}
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
   planStep=Math.min(planStep,2);
   const selectionGroups=planKinds.map((key,index)=>{
-    const pictures=key==='places'?chosenLocations():Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
+    const pictures=key==='places'?chosenLocations():key==='transport'?chosenTransports():Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
     if(!pictures.length)return null;
     const [,label,icon]=uploadCategories.find(([kind])=>kind===key);
     return {html:`<div class="plan-group" data-selection-group="${key}" role="group" aria-label="${label}"><span class="plan-category" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><div class="plan-group-pictures">${pictures.map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`).join('')}</div></div>`};
   }).filter(Boolean);
   const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${selectionGroups.map(group=>group.html).join('')}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
   function cards(kind) {
-    const multi=kind==='people'||kind==='items'||kind==='places'&&locationCount>1;
     const frequent=[...state[kind]].sort((a,b)=>(b.usageCount||0)-(a.usageCount||0)).slice(0,3);
     const other=state[kind].filter(item=>!frequent.includes(item));
     function picture(item){
-      const active=kind==='places'?chosenLocations().some(x=>x.id===item.id):multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
-      const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
-      return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">${kind==='places'&&locationCount>1&&active?chosenLocations().findIndex(x=>x.id===item.id)+1:'✓'}</span><span class="name">${esc(item.name)}</span></button>`;
+      const entries=kind==='places'?chosenLocations():kind==='transport'?chosenTransports():selected[kind];
+      const active=entries.some(x=>x.id===item.id);
+      return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}"><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">${['places','transport'].includes(kind)&&active?entries.findIndex(x=>x.id===item.id)+1:'✓'}</span><span class="name">${esc(item.name)}</span></button>`;
     }
     return `<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}<div class="grid other-choices">${other.map(picture).join('')}<button type="button" class="picture add-picture" data-add-kind="${kind}" aria-label="Add item to ${kind==='places'?'Places':kind==='transport'?'Transport':kind==='people'?'People':'Items'}"><span class="add-picture-symbol" aria-hidden="true">＋</span><span class="name">Add item</span></button></div></div>`;
   }
-  const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
+  const title=['Where are we going?','How are we travelling?','Who is coming along?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
-  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
-  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${planStep===0?`<fieldset class="location-count"><legend>Number of stops</legend><div class="stop-segments">${[1,2,3].map(count=>`<button type="button" data-location-count="${count}" aria-pressed="${locationCount===count}">${count}</button>`).join('')}</div></fieldset>`:''}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${chosenLocations().length===locationCount&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div><button type="button" id="scrollCue" class="scroll-cue" hidden><span>${planStep===2?'Scroll to finish':'Scroll for more'}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`,'choose',progress);
+  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us?</h2><p class="optional-label">Optional</p></div></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
+  const canContinue=planStep===0?!!selected.places:!!selected.transport;
+  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="plan-actions"><button type="button" id="nextStep" class="plan-fab" aria-label="Next" title="Next" ${planStep<2&&canContinue?'':'hidden'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button><button type="button" id="start" class="plan-fab plan-fab-start" aria-label="Show the plan" ${planStep===2?'':'hidden'} ${selected.places&&selected.transport?'':'disabled'}>Show<br>the plan</button></div><button type="button" id="scrollCue" class="scroll-cue" hidden><span>Scroll for more</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`,'choose',progress);
+  $('#nextStep').onclick=()=>{if(!canContinue||planStep>=2)return;planStep++;renderChoose(true);};
   $('#scrollCue').onclick=()=>window.scrollBy({top:window.innerHeight*.65,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   queueScrollCue();
   app.querySelectorAll('[data-add-kind]').forEach(button=>button.onclick=()=>openUpload(button.dataset.addKind));
-  app.querySelectorAll('[data-location-count]').forEach(button=>button.onclick=()=>{locationCount=Number(button.dataset.locationCount);selected.locations=chosenLocations().slice(0,locationCount);selected.places=selected.locations[0]||null;renderChoose();app.querySelector(`[data-location-count="${locationCount}"]`).focus({preventScroll:true});});
-
-  app.querySelectorAll('[data-location-count]').forEach((button,index)=>button.onkeydown=e=>{
-    const next={ArrowLeft:(index+2)%3,ArrowRight:(index+1)%3,Home:0,End:2}[e.key];
-    if(next===undefined)return;e.preventDefault();app.querySelectorAll('[data-location-count]')[next].click();
-  });
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
-    if(kind==='places'){
-      if(locationCount===1)selected.locations=[item];
-      else if(chosenLocations().some(x=>x.id===item.id))selected.locations=chosenLocations().filter(x=>x.id!==item.id);
-      else if(chosenLocations().length<locationCount)selected.locations=[...chosenLocations(),item];
-      selected.places=selected.locations[0]||null;
-      if(selected.locations.length===locationCount)planStep=1;
-      renderChoose(true);
-    }else if(kind==='people'||kind==='items'){
-      if(selected[kind].some(x=>x.id===item.id))selected[kind]=selected[kind].filter(x=>x.id!==item.id);
-      else if(kind==='people'||selected.items.length<MAX_BRING_ITEMS)selected[kind].push(item);
-      else return;
-      renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
-    }else{selected[kind]=item;planStep++;renderChoose(true);}
+    const key=kind==='places'?'locations':kind==='transport'?'transports':kind;
+    const entries=kind==='places'?chosenLocations():kind==='transport'?chosenTransports():selected[kind];
+    selected[key]=entries.some(x=>x.id===item.id)?entries.filter(x=>x.id!==item.id):[...entries,item];
+    selected.places=chosenLocations()[0]||null;selected.transport=chosenTransports()[0]||null;
+    renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
   });
-  if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;locationCount=1;planStep=0;renderChoose(true);};
+  if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;planStep=0;renderChoose(true);};
   app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);const kind=button.dataset.editKind;renderChoose(true);if(kind==='items'){$('#itemsHeading').focus({preventScroll:true});$('#itemsHeading').scrollIntoView({block:'start'});}});
   $('#start').onclick=()=>{
-    if(chosenLocations().length!==locationCount||!selected.transport)return;
-    pendingJourney={places:selected.places,locations:[...chosenLocations()],transport:selected.transport,items:selected.items.slice(0,MAX_BRING_ITEMS),people:[...selected.people]};
+    if(!selected.places||!selected.transport)return;
+    pendingJourney={places:selected.places,locations:[...chosenLocations()],transport:selected.transport,transports:[...chosenTransports()],items:[...selected.items],people:[...selected.people]};
     let skip=false;try{skip=localStorage.getItem('tc-skip-plan-intro')==='true';}catch{}
     if(skip)beginJourney();else{$('#skipPlanIntro').checked=false;$('#planDialog').showModal();}
   };
@@ -117,7 +104,8 @@ function beginJourney() {
     catch { toast('Your plan can start, but this browser could not remember the splash screen setting.'); }
   }
   locked=pendingJourney; pendingJourney=null; taps=[];
-  api('usage',{places:(locked.locations||[locked.places]).map(x=>x.id),transport:[locked.transport.id],items:locked.items.map(x=>x.id),people:locked.people.map(x=>x.id)}).then(data=>{state=data;}).catch(()=>{});
+  clearTimeout(toastTimer);$('#toast').hidden=true;
+  api('usage',{places:(locked.locations||[locked.places]).map(x=>x.id),transport:(locked.transports||[locked.transport]).map(x=>x.id),items:locked.items.map(x=>x.id),people:locked.people.map(x=>x.id)}).then(data=>{state=data;}).catch(()=>{});
   $('#planDialog').close(); renderLocked();
   document.documentElement.requestFullscreen?.().catch(()=>{});
   if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
@@ -128,9 +116,8 @@ $('#planDialog').addEventListener('close',()=>{pendingJourney=null;});
 function finishJourney() {
   try { localStorage.removeItem('tc-locked-journey'); }
   catch { toast('Allow browser storage to finish this saved plan.');return; }
-  locationCount=(locked.locations||[locked.places]).length;
-  selected={places:locked.places,locations:locked.locations||[locked.places],transport:locked.transport,items:locked.items||[],people:locked.people||[]};
-  state ??= {places:locked.locations||[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[]};
+  selected={places:locked.places,locations:locked.locations||[locked.places],transport:locked.transport,transports:locked.transports||[locked.transport],items:locked.items||[],people:locked.people||[]};
+  state ??= {places:locked.locations||[locked.places],transport:locked.transports||[locked.transport],items:locked.items||[],people:locked.people||[]};
   locked=null;taps=[];planStep=0;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
   location.hash='choose';renderChoose();
@@ -140,8 +127,9 @@ function renderLocked() {
   const items = locked.items || [];
   const people = locked.people || [];
   const locations=locked.locations||[locked.places];
-  const cues=[...locations.map((item,index)=>({item,label:index?'Then:':'To:'})),{item:locked.transport,label:'By:'}];
-  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair ${locations.length>1?'multi-stop stops-'+locations.length:''}">${cues.map(({item,label})=>`<figure class="cue-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption><span class="cue-label">${label}</span><span class="cue-name">${esc(item.name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">With:</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing:</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
+  const transports=locked.transports||[locked.transport];
+  const cues=[...locations.map((item,index)=>({item,label:index?'Then:':'To:'})),...transports.map((item,index)=>({item,label:index?'Then:':'By:'}))];
+  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair ${cues.length>2?'multi-stop':''} ${cues.length>=4?'many-cues':''}">${cues.map(({item,label})=>`<figure class="cue-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption><span class="cue-label">${label}</span><span class="cue-name">${esc(item.name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">With:</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing:</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
   $('#lockedSurface').addEventListener('contextmenu', e=>e.preventDefault());
   $('#lockedSurface').onclick = () => {
     const now = Date.now(); taps = taps.filter(t=>now-t<3000); taps.push(now);
@@ -149,7 +137,7 @@ function renderLocked() {
   };
 }
 const uploadCategories = [
-  ['places','Place','<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'],
+  ['places','Places','<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'],
   ['transport','Transport','<rect x="5" y="3" width="14" height="15" rx="3"/><path d="M5 11h14M12 3v8M8 18l-3 4m11-4 3 4M8 21h8"/><circle cx="8.5" cy="14.5" r=".8"/><circle cx="15.5" cy="14.5" r=".8"/>'],
   ['items','Items','<circle cx="6.5" cy="5" r="3"/><circle cx="17.5" cy="5" r="3"/><ellipse cx="12" cy="18" rx="5" ry="4"/><circle cx="7" cy="20" r="2.5"/><circle cx="17" cy="20" r="2.5"/><circle cx="12" cy="10" r="6"/><ellipse cx="12" cy="12" rx="2" ry="1.5"/><path d="M9 9h.01M15 9h.01"/>'],
   ['people','People','<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/>']
@@ -364,10 +352,13 @@ async function start() {
       const validPicture = item => item && typeof item.name==='string' && /^\/images\/[a-f0-9]+\.(jpg|png|webp)$/.test(item.image);
       if(validPicture(data.places) && validPicture(data.transport)) {
         // Journeys saved before bring-along items were added still restore normally.
-        data.locations=Array.isArray(data.locations)&&data.locations.length?data.locations.filter(validPicture).slice(0,3):[data.places];
+        data.locations=Array.isArray(data.locations)&&data.locations.length?data.locations.filter(validPicture):[data.places];
         if(!data.locations.length)data.locations=[data.places];
         data.places=data.locations[0];
-        data.items = Array.isArray(data.items) ? data.items.filter(validPicture).slice(0,MAX_BRING_ITEMS) : [];
+        data.transports=Array.isArray(data.transports)&&data.transports.length?data.transports.filter(validPicture):[data.transport];
+        if(!data.transports.length)data.transports=[data.transport];
+        data.transport=data.transports[0];
+        data.items = Array.isArray(data.items) ? data.items.filter(validPicture) : [];
         data.people = Array.isArray(data.people) ? data.people.filter(validPicture) : [];
         locked=data;
       }

@@ -208,10 +208,9 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, {'ok': True})
         elif path == '/api/usage':
             kinds = ('places', 'transport', 'items', 'people')
-            limits = {'places': 3, 'transport': 1, 'items': 4, 'people': 1000}
             for kind in kinds:
                 ids = body.get(kind, [])
-                if not isinstance(ids, list) or len(ids) > limits[kind] or any(not isinstance(value, str) for value in ids) or len(set(ids)) != len(ids):
+                if not isinstance(ids, list) or any(not isinstance(value, str) for value in ids) or len(set(ids)) != len(ids):
                     raise ValueError('Invalid journey selections.')
                 if kind in ('places', 'transport') and not ids:
                     raise ValueError('Choose a place and transport.')

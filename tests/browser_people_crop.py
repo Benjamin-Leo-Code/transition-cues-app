@@ -9,7 +9,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import open_add, open_library, track_fullscreen, leave_fullscreen, show_plan, open_step
+from browser_helpers import choose_pair, open_add, open_library, track_fullscreen, leave_fullscreen, show_plan, open_step
 
 
 def run(engine):
@@ -126,7 +126,7 @@ def run(engine):
                 expect(mobile.get_by_role('button',name='Move Person B right',exact=True)).to_be_disabled()
                 mobile.get_by_role('button',name='Move Person B left',exact=True).click()
                 expect(mobile.locator('.library-item strong').first).to_have_text('Person B')
-                page.reload();page.get_by_role('button',name='Park',exact=True).click();page.get_by_role('button',name='Bus',exact=True).click();open_step(page,'people')
+                page.reload();choose_pair(page);open_step(page,'people')
                 assert page.locator('[data-kind="people"] .name').all_text_contents()==['Person B','Person A']
                 mobile.get_by_role('button',name='Move Person B right',exact=True).click()
                 expect(mobile.locator('.library-item strong').first).to_have_text('Person A')
@@ -144,7 +144,7 @@ def run(engine):
                 mobile.locator('#cropX').fill('100')
                 mobile.locator('#cropCancel').click()
                 assert get_person()['image']==old_image
-                page.reload();page.get_by_role('button',name='Park',exact=True).click();page.get_by_role('button',name='Bus',exact=True).click()
+                page.reload();choose_pair(page)
                 for image in page.locator('.picture img').all():
                     bounds=image.bounding_box()
                     assert abs(bounds['width']-bounds['height'])<1,bounds
@@ -152,12 +152,12 @@ def run(engine):
                 expect(page.locator('#start')).to_be_enabled();show_plan(page)
                 expect(page.locator('.journey-people')).to_have_count(0)
                 for _ in range(5):page.locator('#lockedSurface h1:visible').click()
-                expect(page.locator('#start')).to_be_visible()
+                expect(page.locator('#nextStep')).to_be_visible()
                 open_step(page,'items')
                 for name in ['Drink','Coat','Toy','Headphones']:page.get_by_role('button',name=name,exact=True).click()
                 open_step(page,'people')
                 for name in ['Person A','Person B']:page.get_by_role('button',name=name,exact=True).click()
-                # People can be toggled independently of the four-item cap.
+                # People and items can be toggled independently.
                 page.get_by_role('button',name='Person B',exact=True).click()
                 expect(page.locator('#peopleCount')).to_have_count(0)
                 page.get_by_role('button',name='Person B',exact=True).click()

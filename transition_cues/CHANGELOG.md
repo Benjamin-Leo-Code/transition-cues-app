@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.38
+
+- Remove stop-count selection and allow multiple ordered locations and transport modes.
+- Remove the four-item selection limit and counter.
+- Show a floating circular Next arrow after selecting a location/transport, replaced by Show the plan on the optional final page.
+- Add question marks to the Transport and Items questions.
+- Rename the Place category tab to Places.
+
 ## 1.0.37
 
 - Significantly reduce space between Reset and the Transport/People headings.

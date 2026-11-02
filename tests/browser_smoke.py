@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, show_plan, open_add, open_library
+from browser_helpers import choose_pair, open_step, track_fullscreen, leave_fullscreen, show_plan, open_add, open_library
 
 
 def run():
@@ -50,8 +50,7 @@ def run():
                 mobile.screenshot(path='/tmp/transition-cues-phone.png', full_page=True)
                 assert mobile.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Phone layout overflows'
                 page.reload()
-                page.get_by_role('button', name='Park',exact=True).click()
-                page.get_by_role('button', name='Bus',exact=True).click()
+                choose_pair(page)
                 # Bring-along items are optional; old saved journeys still restore.
                 expect(page.locator('#start')).to_be_enabled()
                 show_plan(page)
@@ -61,19 +60,18 @@ def run():
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 expect(page.locator('.bring-items')).to_have_count(0)
                 for _ in range(5): page.locator('#lockedSurface h1:visible').click()
-                expect(page.locator('#start')).to_be_visible()
-                page.get_by_role('button', name='Park',exact=True).click()
-                page.get_by_role('button', name='Bus',exact=True).click()
+                expect(page.locator('#nextStep')).to_be_visible()
+                choose_pair(page)
                 for name in ['Drink','Headphones','Coat','Toy']:
                     page.get_by_role('button', name=name, exact=True).click()
-                expect(page.locator('#itemCount')).to_have_text('4/4')
+                expect(page.locator('#itemCount')).to_have_count(0)
                 expect(page.locator('[data-add-kind="items"]')).to_be_enabled()
-                expect(page.get_by_role('button', name='Bag', exact=True)).to_be_disabled()
+                expect(page.get_by_role('button', name='Bag', exact=True)).to_be_enabled()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(4)
                 page.get_by_role('button', name='Headphones', exact=True).click()
                 expect(page.get_by_role('button', name='Bag', exact=True)).to_be_enabled()
                 page.get_by_role('button', name='Bag', exact=True).click()
-                expect(page.locator('#itemCount')).to_have_text('4/4')
+                expect(page.locator('#itemCount')).to_have_count(0)
                 page.get_by_role('button', name='Bag', exact=True).click()
                 page.get_by_role('button', name='Headphones', exact=True).click()
                 page.screenshot(path='/tmp/transition-cues-picker.png', full_page=True)
@@ -81,16 +79,13 @@ def run():
                 expect(page.locator('#lockedSurface')).to_be_visible()
                 expect(page.locator('nav')).to_have_count(0)
                 expect(page.locator('.bring-card')).to_have_count(4)
-                # Restoring a tampered/oversized snapshot must also enforce the cap.
-                page.evaluate("const j=JSON.parse(localStorage.getItem('tc-locked-journey'));j.items.push(j.items[0]);localStorage.setItem('tc-locked-journey',JSON.stringify(j));")
-                page.reload()
-                expect(page.locator('#lockedSurface')).to_be_visible()
-                for _ in range(4): page.locator('#lockedSurface h1:visible').click()
-                expect(page.locator('#lockedSurface')).to_be_visible()
-                page.locator('#lockedSurface h1:visible').click()
-                expect(page.locator('#start')).to_be_visible()
+                # A fifth distinct item survives save, refresh and library deletion elsewhere.
+                for _ in range(5):page.locator('#lockedSurface h1:visible').click()
+                open_step(page,'items')
+                page.get_by_role('button',name='Bag',exact=True).click()
+                expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(5)
                 show_plan(page)
-                expect(page.locator('.bring-card')).to_have_count(4)
+                page.reload();expect(page.locator('.bring-card')).to_have_count(5)
                 # A real fullscreen browser window cannot be resized by Chromium's protocol.
                 # Exit browser fullscreen only; the application's journey display must remain active.
                 leave_fullscreen(page)
@@ -110,7 +105,7 @@ def run():
                 mobile.get_by_role('button', name='Remove', exact=True).click()
                 expect(mobile.locator('#deleteDialog')).not_to_be_visible()
                 page.reload()
-                expect(page.locator('.bring-card')).to_have_count(4)
+                expect(page.locator('.bring-card')).to_have_count(5)
                 for image in page.locator('.bring-card img').all():
                     expect(image).to_be_visible()
                     assert image.evaluate('(img)=>img.complete && img.naturalWidth>0')
@@ -130,7 +125,7 @@ def run():
                 expect(mobile.locator('#returnForm,.return-link')).to_have_count(0)
                 assert not errors, errors
                 browser.close()
-                print('PASS: original flows; item uploads, optional selection, four-item cap, deselection, old journey restore, item layout at tablet/phone sizes, item snapshots after refresh and cross-device deletion; no browser errors.')
+                print('PASS: original flows; item uploads, optional selection, unlimited items, deselection, old journey restore, item layout at tablet/phone sizes, item snapshots after refresh and cross-device deletion; no browser errors.')
         finally:
             server.shutdown()
             server.server_close()

@@ -52,10 +52,13 @@ class AppTests(unittest.TestCase):
         body = {'places': [place['id']], 'transport': [transport['id']], 'items': [], 'people': []}
         self.assertEqual(self.request('/api/usage', body)[0], 200)
         self.assertEqual(Store(self.directory.name).public()['places'][0]['usageCount'], 1)
-        for invalid in [{**body, 'places': [place['id']] * 2}, {**body, 'places': []}, {**body, 'items': ['a', 'b', 'c', 'd', 'e']}, {**body, 'people': [None]}]:
+        for invalid in [{**body, 'places': [place['id']] * 2}, {**body, 'places': []}, {**body, 'items': ['a', 'a']}, {**body, 'people': [None]}]:
             self.assertEqual(self.request('/api/usage', invalid)[0], 400)
         self.assertEqual(self.request('/api/state')[1]['places'][0]['usageCount'], 1)
         self.assertEqual(self.request('/api/state')[1]['transport'][0]['usageCount'], 1)
+        large={**body,'places':[place['id'],'other1','other2','other3'],'transport':[transport['id'],'walking'],'items':['a','b','c','d','e','f']}
+        self.assertEqual(self.request('/api/usage',large)[0],200)
+        self.assertEqual(Store(self.directory.name).public()['places'][0]['usageCount'],2)
 
     def test_first_launch_needs_no_setup(self):
         public = self.request('/api/state')[1]
@@ -125,7 +128,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(len(Store(self.directory.name).public()['places']), 8)
 
     def test_bring_items_storage_and_removal(self):
-        # The library may contain more than four; the cap applies to each journey.
+        # The library and journeys can both contain more than four items.
         items = [self.add('items', name) for name in ['Drink', 'Headphones', 'Coat', 'Toy', 'Bag']]
         self.assertEqual(len(Store(self.directory.name).public()['items']), 5)
         self.assertEqual(self.request('/api/delete', {'kind':'items', 'id':items[0]['id']})[0], 200)

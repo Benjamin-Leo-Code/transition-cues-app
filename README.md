@@ -2,7 +2,7 @@
 
 Transition Cues
 
-A calm picture display for showing **where we are going**, **how we are getting there**, up to **four items to bring along**, and optional **people coming along**.
+A calm picture display for showing **where we are going**, **how we are getting there**, **items to bring along**, and optional **people coming along**.
 
 **Install and update through a custom Home Assistant add-on repository. This is the only supported deployment method.** Requires Home Assistant OS with the Supervisor and an add-on/app store, on an amd64 or aarch64 machine. Newer Home Assistant versions call add-ons “apps”.
 
@@ -24,7 +24,11 @@ No GitHub token is needed for this public repository. You do not need to copy fi
 
 ## Use
 
-Choose one to three locations in visit order, then transport. The **Number of stops** segmented control defaults to one. The first row shows up to three most-used pictures; other choices appear below in rows of four on phones. Usage is saved when a plan is shown and is shared across devices; ties keep the library order. After choosing a place, a grouped summary of selected pictures replaces the logo and settings cog. Tap a thumbnail to edit an earlier choice, or **Reset** below the row to clear all choices and start again. On the final page, optionally select people first and up to four bring-along items beneath them. Scroll through the choices and tap **Show the plan** at the bottom when ready. A floating scroll cue appears when there is more below; tap it or swipe to continue. The locked display shows each location as **To**, **Then**, **Then**, alongside transport, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey works in portrait and landscape. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
+Select one or more locations in visit order, then tap the floating circular **Next** arrow at the bottom right. On **How are we travelling?**, select one or more transport modes and tap **Next** again. A selection is required on each of these pages; selecting a picture again removes it. Numbered marks show the order. There is no stop-count control.
+
+On the final page, **Who is coming along?** and **What is coming with us?** are both optional. Select as many people and items as you need, then tap the floating **Show the plan** button in the same corner. The first row of each category shows up to three most-used pictures; the remaining pictures appear in rows of four on phones. Usage is shared across devices; ties keep library order.
+
+The grouped summary at the top replaces the logo and settings cog after the first location is selected. Each category wraps beneath its own glyph. Tap a thumbnail to edit that category or **Reset** to clear the plan. A scroll cue appears while more choices remain below; the floating action stays available while scrolling. The locked display shows locations as **To**, **Then** and transport as **By**, **Then**, followed by optional People and Items. Ordered selections survive reloads, including older single-location/transport plans. Tap five times within three seconds to finish.
 
 Open the app on your phone or tablet and tap **Add item** at the end of the relevant Places, Transport, People or Items list. Choose a photo, enter its name and tap **Add to library**. The category is set by the list you opened it from. Use **Crop photo** to adjust the square frame before uploading. The new picture appears in that list without changing your current plan selections.
 
@@ -58,10 +62,10 @@ Screenshots use coloured test placeholders, not family photographs:
 
 - [Tablet selection screen](docs/screenshots/picker.png)
 - [Frequently used choices on a phone](docs/screenshots/frequent-choices.png)
-- [Three-location journey](docs/screenshots/multiple-locations.png)
+- [Multi-location and transport journey](docs/screenshots/multiple-locations.png)
 - [Transport selection with thumbnail summary](docs/screenshots/transport.png)
 - [Combined People and Items page](docs/screenshots/companions.png)
-- [Bottom-of-page plan button on a phone](docs/screenshots/plan-bottom.png)
+- [Floating plan button on a phone](docs/screenshots/floating-plan.png)
 - [Add item](docs/screenshots/add-item.png)
 - [Manage photos](docs/screenshots/manage-photos.png)
 - [Portrait journey display](docs/screenshots/portrait.png)
