@@ -27,6 +27,14 @@ def run(engine):
                 expect(page.locator('#start')).to_be_disabled()
                 expect(page.locator('#pinDialog')).to_have_count(0)
                 expect(page.locator('.nav a')).to_have_count(1)
+                for width,height in [(320,844),(390,844),(768,1024),(1024,768)]:
+                    page.set_viewport_size({'width':width,'height':height})
+                    brand=page.locator('.brand').bounding_box();nav=page.locator('.nav').bounding_box()
+                    assert brand['x']+brand['width']<=nav['x']+1,(width,brand,nav)
+                    assert page.locator('.brand img').bounding_box()['width']>=56
+                    assert nav['y']>=brand['y']-1 and nav['y']+nav['height']<=brand['y']+brand['height']+1,(width,brand,nav)
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+
                 expect(page.get_by_role('link',name='Picture library',exact=True)).to_have_count(0)
                 page.get_by_role('link',name='Settings',exact=True).click()
                 expect(page.get_by_role('heading',name='Manage photos',exact=True)).to_be_visible()

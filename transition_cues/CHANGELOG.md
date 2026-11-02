@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.33
+
+- Roughly double the opening logo, ReadySteady title and Transition Cues subtitle, with responsive sizing for narrow phones.
+- Keep the opening heading aligned with subsequent planner headings.
+
 ## 1.0.32
 
 - Align the opening Where are we going? heading with subsequent planner headings on phones and tablets.
