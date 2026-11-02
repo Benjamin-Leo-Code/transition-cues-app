@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.26
+
+- Wrap selected People and Items within their own category beneath their respective glyphs, with no horizontal scrolling.
+- Keep Place and Transport as single-picture categories.
+
 ## 1.0.25
 
 - Remove the planner header divider and tighten the space above questions.

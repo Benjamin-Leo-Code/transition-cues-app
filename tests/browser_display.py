@@ -114,19 +114,23 @@ def run(engine):
                     for item_kind,name in names:
                         if kind==item_kind:page.get_by_role('button',name=name,exact=True).click()
                 expect(page.locator('.plan-thumbnail')).to_have_count(6)
-                # A narrow phone keeps all selections on one line and scrolls within the row.
+                # Multi-select categories wrap beneath their own glyphs on a narrow phone.
                 page.set_viewport_size({'width':320,'height':844})
                 expect(page.locator('.plan-category svg')).to_have_count(4)
-                boxes=[thumb.bounding_box() for thumb in page.locator('.plan-thumbnail').all()]
-                assert max(box['y'] for box in boxes)-min(box['y'] for box in boxes)<1
-                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollWidth > row.clientWidth')
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
-                page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft = row.scrollWidth')
-                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft > 0')
+                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollWidth <= row.clientWidth')
+                for kind in ['people','items']:
+                    group=page.locator(f'[data-selection-group="{kind}"]')
+                    icon=group.locator('.plan-category').bounding_box()
+                    boxes=[thumb.bounding_box() for thumb in group.locator('.plan-thumbnail').all()]
+                    assert boxes[1]['y']>boxes[0]['y'],(kind,boxes,group.bounding_box(),page.locator('.plan-thumbnails').bounding_box())
+                    assert all(box['x']>=icon['x']-1 for box in boxes)
+                    assert all(box['x']+box['width']<=group.bounding_box()['x']+group.bounding_box()['width']+1 for box in boxes)
+                for kind in ['places','transport']:
+                    expect(page.locator(f'[data-selection-group="{kind}"] .plan-thumbnail')).to_have_count(1)
                 page.locator('[data-edit-kind="items"]').last.click()
                 expect(page.locator('#itemsHeading')).to_be_focused()
-                assert page.locator('.plan-thumbnails').evaluate('(row) => row.scrollLeft > 0')
-                page.screenshot(path='/tmp/readysteady-scrolling-selections.png',full_page=True)
+                page.screenshot(path='/tmp/readysteady-grouped-selections.png',full_page=True)
                 page.set_viewport_size({'width':1280,'height':900})
                 page.locator('[data-edit-step="0"]').click()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','0')

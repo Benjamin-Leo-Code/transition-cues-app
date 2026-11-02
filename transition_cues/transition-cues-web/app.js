@@ -56,15 +56,19 @@ function empty(kind) {
 }
 const planKinds=['places','transport','people','items'];
 function renderChoose(focusStep=false) {
-  const selectionScroll=$('.plan-thumbnails')?.scrollLeft||0;
   for(const kind of ['places','transport'])if(selected[kind])selected[kind]=state[kind].find(item=>item.id===selected[kind].id)||null;
   selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
   selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
   if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];planStep=0;}
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
   planStep=Math.min(planStep,2);
-  const thumbnails=planKinds.flatMap((key,index)=>(Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[]).map((item,itemIndex)=>`<span class="plan-selection"><span class="plan-category" aria-hidden="true">${itemIndex===0?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${uploadCategories.find(([kind])=>kind===key)[2]}</svg>`:''}</span><button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button></span>`)).join('');
-  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${thumbnails}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
+  const selectionGroups=planKinds.map((key,index)=>{
+    const pictures=Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
+    if(!pictures.length)return null;
+    const [,label,icon]=uploadCategories.find(([kind])=>kind===key);
+    return {html:`<div class="plan-group" data-selection-group="${key}" role="group" aria-label="${label}"><span class="plan-category" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><div class="plan-group-pictures">${pictures.map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`).join('')}</div></div>`};
+  }).filter(Boolean);
+  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${selectionGroups.map(group=>group.html).join('')}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
   function cards(kind) {
     const multi=kind==='people'||kind==='items';
     return state[kind].length?`<div class="grid" data-choice-group="${kind}">${state[kind].map(item=>{
@@ -77,7 +81,6 @@ function renderChoose(focusStep=false) {
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
   const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
   frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
-  if($('.plan-thumbnails'))$('.plan-thumbnails').scrollLeft=selectionScroll;
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
     if(kind==='people'||kind==='items'){
