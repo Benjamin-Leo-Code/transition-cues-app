@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.32
+
+- Align the opening Where are we going? heading with subsequent planner headings on phones and tablets.
+- Reduce the gap between the opening heading and Number of stops.
+
 ## 1.0.31
 
 - Keep Show the plan at the bottom of the page after all choices, instead of floating above them.
