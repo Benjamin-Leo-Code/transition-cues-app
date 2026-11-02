@@ -189,9 +189,66 @@ def run(engine):
                 page.get_by_role('button',name='Bus',exact=True).click()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"],[data-kind="people"][aria-pressed="true"]')).to_have_count(0)
                 page.reload();expect(page.locator('#start')).not_to_be_visible()
+                # Shared usage ordering and an ordered three-stop journey.
+                page.evaluate("""async () => {
+                    const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';
+                    for(const name of ['Stop C','Stop D','Stop E','Stop F','Stop G']) await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'places',name,image})});
+                    const state=await (await fetch('/api/state')).json();
+                    for(const name of ['Stop C','Stop C','Stop D','Stop E']) await fetch('/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({places:[state.places.find(x=>x.name===name).id],transport:[state.transport[0].id]})});
+                }""")
+                page.reload()
+                expect(page.locator('[data-location-count="1"]')).to_have_attribute('aria-pressed','true')
+                expect(page.locator('[data-choice-group="places"] .frequent-choices .picture')).to_have_count(3)
+                expect(page.locator('[data-choice-group="places"] .other-choices .picture')).to_have_count(4)
+                expect(page.locator('.frequent-choices .picture').first.locator('.name')).to_have_text('Stop C')
+                page.set_viewport_size({'width':390,'height':844})
+                frequent=page.locator('[data-choice-group="places"] .frequent-choices .picture').all()
+                other=page.locator('[data-choice-group="places"] .other-choices .picture').all()
+                assert len({round(x.bounding_box()['y']) for x in frequent})==1
+                assert len({round(x.bounding_box()['y']) for x in other})==1
+                assert other[0].bounding_box()['y']>frequent[0].bounding_box()['y']
+                page.screenshot(path='/tmp/readysteady-frequent-choices.png',full_page=True)
+                page.locator('[data-location-count="3"]').click()
+                page.get_by_role('button',name='Stop E',exact=True).click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','0')
+                expect(page.locator('#start')).to_be_disabled()
+                page.get_by_role('button',name='Stop C',exact=True).click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','0')
+                page.get_by_role('button',name='Stop D',exact=True).click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','1')
+                expect(page.locator('[data-selection-group="places"] .plan-thumbnail')).to_have_count(3)
+                page.get_by_role('button',name='Bus',exact=True).click()
+                show_plan(page);leave_fullscreen(page)
+                expect(page.locator('.cue-name')).to_have_text(['Stop E','Stop C','Stop D','Bus'])
+                expect(page.locator('.cue-label')).to_have_text(['To:','Then:','Then:','By:'])
+                for width,height in [(390,844),(1024,768)]:
+                    page.set_viewport_size({'width':width,'height':height})
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    for image in page.locator('.cue-card img').all():
+                        box=image.bounding_box();assert abs(box['width']-box['height'])<1
+                page.screenshot(path='/tmp/readysteady-multiple-locations.png',full_page=True)
+                page.reload()
+                expect(page.locator('.cue-name')).to_have_text(['Stop E','Stop C','Stop D','Bus'])
+                usage=page.request.get(f'http://127.0.0.1:{server.server_port}/api/state').json()
+                assert next(x for x in usage['places'] if x['name']=='Stop C')['usageCount']==3
+                for _ in range(5):page.locator('.journey-content>h1').click()
+                page.get_by_role('button',name='Reset',exact=True).click()
+                expect(page.locator('[data-location-count="1"]')).to_have_attribute('aria-pressed','true')
+                # Two stops use the same ordering; deselection and changing the limit trim choices.
+                page.locator('[data-location-count="3"]').click()
+                page.get_by_role('button',name='Stop C',exact=True).click()
+                page.get_by_role('button',name='Stop D',exact=True).click()
+                page.get_by_role('button',name='Stop C',exact=True).click()
+                expect(page.locator('[data-selection-group="places"] .plan-thumbnail')).to_have_count(1)
+                page.locator('[data-location-count="2"]').click()
+                page.get_by_role('button',name='Stop E',exact=True).click()
+                page.get_by_role('button',name='Bus',exact=True).click()
+                show_plan(page);leave_fullscreen(page)
+                expect(page.locator('.cue-name')).to_have_text(['Stop D','Stop E','Bus'])
+                page.reload();expect(page.locator('.cue-name')).to_have_text(['Stop D','Stop E','Bus'])
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, one-step wizard, thumbnail summary and editing, reset navigation, optional-item skip, conditional start button, accessible navigation, portrait and landscape display, aligned long names and photos, companion groups, snapshot reload and timed five-tap exit.')
+                print(f'PASS ({engine}): selection-card photo/name alignment at phone/tablet sizes, one-step wizard, thumbnail summary and editing, reset navigation, optional-item skip, conditional start button, accessible navigation, portrait and landscape display, aligned long names and photos, companion groups, snapshot reload, shared frequency ordering, phone three/four-column grids, ordered two/three-location plans and timed five-tap exit.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

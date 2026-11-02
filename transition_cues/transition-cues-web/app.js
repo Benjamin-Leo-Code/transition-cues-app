@@ -3,6 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
+let locationCount=1;
 let toastTimer, pendingJourney = null, pendingEdit = null, planStep = 0, reorderBusy = false, settingsTabFocus = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
@@ -55,46 +56,60 @@ function empty(kind) {
   return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#settings">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
 }
 const planKinds=['places','transport','people','items'];
+const chosenLocations=()=>selected.locations||(selected.places?[selected.places]:[]);
 function renderChoose(focusStep=false) {
-  for(const kind of ['places','transport'])if(selected[kind])selected[kind]=state[kind].find(item=>item.id===selected[kind].id)||null;
+  selected.locations=chosenLocations().map(item=>state.places.find(x=>x.id===item.id)).filter(Boolean).slice(0,locationCount);
+  selected.places=selected.locations[0]||null;
+  if(selected.transport)selected.transport=state.transport.find(item=>item.id===selected.transport.id)||null;
   selected.items=selected.items.map(item=>state.items.find(x=>x.id===item.id)).filter(Boolean).slice(0,MAX_BRING_ITEMS);
   selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
   if(!selected.places){selected.transport=null;selected.items=[];selected.people=[];planStep=0;}
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
   planStep=Math.min(planStep,2);
   const selectionGroups=planKinds.map((key,index)=>{
-    const pictures=Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
+    const pictures=key==='places'?chosenLocations():Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
     if(!pictures.length)return null;
     const [,label,icon]=uploadCategories.find(([kind])=>kind===key);
     return {html:`<div class="plan-group" data-selection-group="${key}" role="group" aria-label="${label}"><span class="plan-category" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><div class="plan-group-pictures">${pictures.map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`).join('')}</div></div>`};
   }).filter(Boolean);
   const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${selectionGroups.map(group=>group.html).join('')}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
   function cards(kind) {
-    const multi=kind==='people'||kind==='items';
-    return state[kind].length?`<div class="grid" data-choice-group="${kind}">${state[kind].map(item=>{
-      const active=multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
+    const multi=kind==='people'||kind==='items'||kind==='places'&&locationCount>1;
+    const frequent=[...state[kind]].sort((a,b)=>(b.usageCount||0)-(a.usageCount||0)).slice(0,3);
+    const other=state[kind].filter(item=>!frequent.includes(item));
+    function picture(item){
+      const active=kind==='places'?chosenLocations().some(x=>x.id===item.id):multi?selected[kind].some(x=>x.id===item.id):selected[kind]?.id===item.id;
       const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
-      return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">✓</span><span class="name">${esc(item.name)}</span></button>`;
-    }).join('')}</div>`:empty(kind);
+      return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">${kind==='places'&&locationCount>1&&active?chosenLocations().findIndex(x=>x.id===item.id)+1:'✓'}</span><span class="name">${esc(item.name)}</span></button>`;
+    }
+    return state[kind].length?`<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}${other.length?`<div class="grid other-choices">${other.map(picture).join('')}</div>`:''}</div>`:empty(kind);
   }
   const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
   const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
-  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
+  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${planStep===0?`<fieldset class="location-count"><legend>Number of locations</legend><div>${[1,2,3].map(count=>`<button type="button" data-location-count="${count}" aria-pressed="${locationCount===count}">${count}</button>`).join('')}</div></fieldset>`:''}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${chosenLocations().length===locationCount&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
+  app.querySelectorAll('[data-location-count]').forEach(button=>button.onclick=()=>{locationCount=Number(button.dataset.locationCount);selected.locations=chosenLocations().slice(0,locationCount);selected.places=selected.locations[0]||null;renderChoose();app.querySelector(`[data-location-count="${locationCount}"]`).focus({preventScroll:true});});
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
-    if(kind==='people'||kind==='items'){
+    if(kind==='places'){
+      if(locationCount===1)selected.locations=[item];
+      else if(chosenLocations().some(x=>x.id===item.id))selected.locations=chosenLocations().filter(x=>x.id!==item.id);
+      else if(chosenLocations().length<locationCount)selected.locations=[...chosenLocations(),item];
+      selected.places=selected.locations[0]||null;
+      if(selected.locations.length===locationCount)planStep=1;
+      renderChoose(true);
+    }else if(kind==='people'||kind==='items'){
       if(selected[kind].some(x=>x.id===item.id))selected[kind]=selected[kind].filter(x=>x.id!==item.id);
       else if(kind==='people'||selected.items.length<MAX_BRING_ITEMS)selected[kind].push(item);
       else return;
       renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
     }else{selected[kind]=item;planStep++;renderChoose(true);}
   });
-  if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;planStep=0;renderChoose(true);};
+  if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;locationCount=1;planStep=0;renderChoose(true);};
   app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);const kind=button.dataset.editKind;renderChoose(true);if(kind==='items'){$('#itemsHeading').focus({preventScroll:true});$('#itemsHeading').scrollIntoView({block:'start'});}});
   $('#start').onclick=()=>{
-    if(!selected.places||!selected.transport)return;
-    pendingJourney={places:selected.places,transport:selected.transport,items:selected.items.slice(0,MAX_BRING_ITEMS),people:[...selected.people]};
+    if(chosenLocations().length!==locationCount||!selected.transport)return;
+    pendingJourney={places:selected.places,locations:[...chosenLocations()],transport:selected.transport,items:selected.items.slice(0,MAX_BRING_ITEMS),people:[...selected.people]};
     let skip=false;try{skip=localStorage.getItem('tc-skip-plan-intro')==='true';}catch{}
     if(skip)beginJourney();else{$('#skipPlanIntro').checked=false;$('#planDialog').showModal();}
   };
@@ -109,6 +124,7 @@ function beginJourney() {
     catch { toast('Your plan can start, but this browser could not remember the splash screen setting.'); }
   }
   locked=pendingJourney; pendingJourney=null; taps=[];
+  api('usage',{places:(locked.locations||[locked.places]).map(x=>x.id),transport:[locked.transport.id],items:locked.items.map(x=>x.id),people:locked.people.map(x=>x.id)}).then(data=>{state=data;}).catch(()=>{});
   $('#planDialog').close(); renderLocked();
   document.documentElement.requestFullscreen?.().catch(()=>{});
   if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
@@ -120,8 +136,9 @@ $('#planDialog').addEventListener('close',()=>{pendingJourney=null;});
 function finishJourney() {
   try { localStorage.removeItem('tc-locked-journey'); }
   catch { toast('Allow browser storage to finish this saved plan.');return; }
-  selected={places:locked.places,transport:locked.transport,items:locked.items||[],people:locked.people||[]};
-  state ??= {places:[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
+  locationCount=(locked.locations||[locked.places]).length;
+  selected={places:locked.places,locations:locked.locations||[locked.places],transport:locked.transport,items:locked.items||[],people:locked.people||[]};
+  state ??= {places:locked.locations||[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
   locked=null;taps=[];planStep=0;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
   location.hash='choose';renderChoose();
@@ -130,7 +147,9 @@ function renderLocked() {
   document.body.classList.add('lock-active');
   const items = locked.items || [];
   const people = locked.people || [];
-  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair">${['places','transport'].map((kind,i)=>`<figure class="cue-card"><img src="${esc(locked[kind].image)}" alt="${esc(locked[kind].name)}" draggable="false"><figcaption><span class="cue-label">${i===0?'To:':'By:'}</span><span class="cue-name">${esc(locked[kind].name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">With:</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing:</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
+  const locations=locked.locations||[locked.places];
+  const cues=[...locations.map((item,index)=>({item,label:index?'Then:':'To:'})),{item:locked.transport,label:'By:'}];
+  app.innerHTML = `<main class="locked ${items.length?'has-items':''} ${people.length?'has-people':''}" id="lockedSurface" aria-label="Journey picture display"><div class="journey-content"><h1>We’re going…</h1><div class="cue-pair ${locations.length>1?'multi-stop stops-'+locations.length:''}">${cues.map(({item,label})=>`<figure class="cue-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption><span class="cue-label">${label}</span><span class="cue-name">${esc(item.name)}</span></figcaption></figure>`).join('')}</div>${people.length||items.length?`<div class="journey-companions">${people.length ? `<section class="journey-people" aria-labelledby="peopleHeading"><h2 id="peopleHeading">With:</h2><div class="people-row">${people.map(person=>`<figure class="person-card"><img src="${esc(person.image)}" alt="${esc(person.name)}" draggable="false"><figcaption>${esc(person.name)}</figcaption></figure>`).join('')}</div></section>` : ''}${items.length ? `<section class="bring-items" aria-labelledby="bringHeading"><h2 id="bringHeading">We’re bringing:</h2><div class="bring-grid">${items.map(item=>`<figure class="bring-card"><img src="${esc(item.image)}" alt="${esc(item.name)}" draggable="false"><figcaption>${esc(item.name)}</figcaption></figure>`).join('')}</div></section>` : ''}</div>`:''}</div></main>`;
   $('#lockedSurface').addEventListener('contextmenu', e=>e.preventDefault());
   $('#lockedSurface').onclick = () => {
     const now = Date.now(); taps = taps.filter(t=>now-t<3000); taps.push(now);
@@ -348,6 +367,9 @@ async function start() {
       const validPicture = item => item && typeof item.name==='string' && /^\/images\/[a-f0-9]+\.(jpg|png|webp)$/.test(item.image);
       if(validPicture(data.places) && validPicture(data.transport)) {
         // Journeys saved before bring-along items were added still restore normally.
+        data.locations=Array.isArray(data.locations)&&data.locations.length?data.locations.filter(validPicture).slice(0,3):[data.places];
+        if(!data.locations.length)data.locations=[data.places];
+        data.places=data.locations[0];
         data.items = Array.isArray(data.items) ? data.items.filter(validPicture).slice(0,MAX_BRING_ITEMS) : [];
         data.people = Array.isArray(data.people) ? data.people.filter(validPicture) : [];
         locked=data;

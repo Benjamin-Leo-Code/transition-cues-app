@@ -46,6 +46,17 @@ class AppTests(unittest.TestCase):
         self.assertEqual(status, 201)
         return item
 
+    def test_usage_is_persistent_and_rejects_invalid_journeys_atomically(self):
+        place = self.add()
+        transport = self.add('transport', 'Bus')
+        body = {'places': [place['id']], 'transport': [transport['id']], 'items': [], 'people': []}
+        self.assertEqual(self.request('/api/usage', body)[0], 200)
+        self.assertEqual(Store(self.directory.name).public()['places'][0]['usageCount'], 1)
+        for invalid in [{**body, 'places': [place['id']] * 2}, {**body, 'places': []}, {**body, 'items': ['a', 'b', 'c', 'd', 'e']}, {**body, 'people': [None]}]:
+            self.assertEqual(self.request('/api/usage', invalid)[0], 400)
+        self.assertEqual(self.request('/api/state')[1]['places'][0]['usageCount'], 1)
+        self.assertEqual(self.request('/api/state')[1]['transport'][0]['usageCount'], 1)
+
     def test_first_launch_needs_no_setup(self):
         public = self.request('/api/state')[1]
         self.assertNotIn('pin', public)

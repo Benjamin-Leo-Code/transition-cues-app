@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.27
+
+- Show up to three frequently used choices above the remaining four-column picture grid, with usage shared across devices.
+- Choose one, two or three ordered locations and display each destination as To / Then / Then, alongside transport.
+- Preserve multi-location journey snapshots across reloads and keep older single-location journeys compatible.
+
 ## 1.0.26
 
 - Wrap selected People and Items within their own category beneath their respective glyphs, with no horizontal scrolling.
