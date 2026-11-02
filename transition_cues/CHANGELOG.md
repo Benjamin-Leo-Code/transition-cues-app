@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.28
+
+- Match the app background and web-app theme colour to the supplied swatch (#ded8ca).
+- Update the Home Assistant wordmark background to match.
+
 ## 1.0.27
 
 - Show up to three frequently used choices above the remaining four-column picture grid, with usage shared across devices.

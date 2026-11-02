@@ -20,7 +20,7 @@ ReadySteady uses **Transition Cues** as its subtitle. Updating from the former T
 
 ## Add to your Home Screen or Dock
 
-The app includes Apple touch icons and a web app manifest with regular and maskable PNG icons, all using the supplied zoomed green mitten artwork on its ivory background. The app uses a richer cream page background.
+The app includes Apple touch icons and a web app manifest with regular and maskable PNG icons, all using the supplied zoomed green mitten artwork on its ivory background. The app uses a warm neutral page background (#ded8ca).
 
 - **iPhone/iPad:** open the app’s address in Safari, choose **Share → Add to Home Screen**, and enable **Open as Web App** if that option appears.
 - **Mac:** open the address in Safari, then choose **File → Add to Dock** (macOS Sonoma or later). See [Apple’s instructions](https://support.apple.com/104996).
