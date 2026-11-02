@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.30
+
+- Rename Number of locations to Number of stops and use a sliding segmented control for 1–3 stops, with arrow-key and Home/End support.
+
 ## 1.0.29
 
 - Add a category-specific Add item tile at the end of each planner picture list, opening photo upload without category selection.
