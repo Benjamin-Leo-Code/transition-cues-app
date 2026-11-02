@@ -35,11 +35,14 @@ def run(engine):
                 expect(page.get_by_text('The display locks when you start.',exact=False)).not_to_be_visible()
                 page.locator('#start').click()
                 expect(page.locator('#planDialog')).to_be_visible()
+                expect(page.get_by_role('heading',name='A quick note',exact=True)).to_be_visible()
+                expect(page.locator('#planBack')).to_have_count(0)
+                expect(page.locator('#planHelp br')).to_have_count(1)
                 expect(page.locator('#lockedSurface')).to_have_count(0)
                 assert page.evaluate("localStorage.getItem('tc-locked-journey')") is None
                 assert page.locator('#planForm').evaluate('(f)=>f.scrollWidth<=innerWidth')
-                # Checking then going back must not persist or start a journey.
-                page.locator('#skipPlanIntro').check();page.locator('#planBack').click()
+                # Dismissing with Escape must not persist a checked preference or start a journey.
+                page.locator('#skipPlanIntro').check();page.keyboard.press('Escape')
                 expect(page.locator('#planDialog')).not_to_be_visible()
                 assert page.evaluate("localStorage.getItem('tc-skip-plan-intro')") is None
                 page.locator('#start').click();expect(page.locator('#skipPlanIntro')).not_to_be_checked()
@@ -67,7 +70,7 @@ def run(engine):
                 expect(second.locator('#skipPlanIntro')).not_to_be_checked()
                 assert not errors,errors
                 browser.close()
-                print(f'PASS ({engine}): pre-lock splash, back/Escape, unchecked repeat, persisted skip, reload restore, tap exit and independent device preference.')
+                print(f'PASS ({engine}): pre-lock splash, Escape dismissal, unchecked repeat, persisted skip, reload restore, tap exit and independent device preference.')
         finally:
             server.shutdown();server.server_close();thread.join()
 

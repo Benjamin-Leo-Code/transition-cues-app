@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.34
+
+- Simplify the pre-lock screen to A quick note, with unlock instructions on a separate line.
+- Remove Ready to go, Back to choices and the extra browser-preference explanation.
+
 ## 1.0.33
 
 - Roughly double the opening logo, ReadySteady title and Transition Cues subtitle, with responsive sizing for narrow phones.

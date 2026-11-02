@@ -30,7 +30,7 @@ Open the app on your phone or tablet and tap **Add item** at the end of the rele
 
 The gear icon opens **Manage photos**. Its segmented control switches between Place, Transport, Items and People using their glyphs. Browse, crop, rename, transfer, reorder or remove pictures here. The app is standalone.
 
-After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
+After **Show the plan**, a splash screen explains how to unlock the display. The **A quick note** screen puts the tap-to-unlock instructions on their own line. Choose **Continue to the plan** to lock the display. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
 
 ## Home Screen and Dock icons
 

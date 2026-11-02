@@ -123,7 +123,6 @@ function beginJourney() {
   if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
 }
 $('#planForm').onsubmit=e=>{e.preventDefault();beginJourney();};
-$('#planBack').onclick=()=>$('#planDialog').close();
 $('#planDialog').addEventListener('close',()=>{pendingJourney=null;});
 
 function finishJourney() {

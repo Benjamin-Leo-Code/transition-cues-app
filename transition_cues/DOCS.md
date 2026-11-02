@@ -80,7 +80,7 @@ Tap the display five times within three seconds to return directly to the plan c
 
 Use tablet kiosk mode or Guided Access to prevent browser/OS navigation and disable sleep as needed. Fullscreen and keeping the screen awake depend on the browser. Keep the app in its own browser tab; ingress/sidebar embedding is not provided.
 
-After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
+After **Show the plan**, a splash screen explains how to unlock the display. The **A quick note** screen puts the tap-to-unlock instructions on their own line. Choose **Continue to the plan** to lock the display. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
 
 ## Updates
 
