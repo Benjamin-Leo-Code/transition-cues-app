@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.41
+
+- Use queued content/image layout checks for the scroll cue to avoid Safari resize-observer loop warnings.
+
 ## 1.0.40
 
 - Remove the Opening ReadySteady placeholder and handle Settings/plan links without loading a new document.

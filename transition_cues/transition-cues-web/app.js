@@ -95,7 +95,9 @@ function queueScrollCue(){
 }
 window.addEventListener('scroll',queueScrollCue,{passive:true});
 window.addEventListener('resize',queueScrollCue);
-new ResizeObserver(queueScrollCue).observe(app);
+// DOM and image changes cover layout updates without a resize-observer feedback loop.
+new MutationObserver(queueScrollCue).observe(app,{childList:true,subtree:true,characterData:true});
+app.addEventListener('load',queueScrollCue,true);
 function beginJourney() {
   if(!pendingJourney)return;
   try { localStorage.setItem('tc-locked-journey', JSON.stringify(pendingJourney)); }
