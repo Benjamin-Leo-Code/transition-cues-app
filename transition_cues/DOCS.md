@@ -66,9 +66,9 @@ Crops keep the existing picture's name and category. Images on an already-locked
 
 ## Plan a journey
 
-The planner has three pages. **Where are we going?** allows multiple locations, and **How are we travelling?** allows multiple transport modes. Select pictures in the order you want them shown. Tapping a selected picture removes it; numbered marks update to reflect the order. There is no stop-count control. A floating circular **Next** arrow appears at the bottom right after at least one choice is selected on the current page. Tap it to advance; selection no longer advances automatically.
+The planner has four pages. **Where are we going?** allows multiple locations, and **How are we travelling?** allows multiple transport modes. Select pictures in the order you want them shown. Tapping a selected picture removes it; numbered marks update to reflect the order. There is no stop-count control. A floating circular **Next** arrow appears at the bottom right after at least one choice is selected on the current page. Tap it to advance; selection no longer advances automatically.
 
-The final page combines **Who is coming along?** with People pictures and **What is coming with us?** with item pictures. Both are optional. There is no four-item cap or selection counter. A circular **Show the plan** button replaces Next in the same corner and remains available while you scroll.
+**Who is coming along?** is a separate People page. It is optional: choose people or tap **Next** immediately to skip. **What is coming with us?** is the fourth and final page and contains only Items. Items are also optional. There is no four-item cap or selection counter. A circular **Show the plan** button replaces Next on the Items page in the same corner and remains available while you scroll, even if no items are selected.
 
 After the first location is selected, grouped thumbnails replace the logo and settings cog. Locations, Transport, People and Items each wrap within their own category beneath their glyph. Tap a thumbnail to edit that category while retaining other choices, or **Reset** to clear all choices and return to the beginning.
 

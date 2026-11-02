@@ -82,12 +82,20 @@ def run(engine):
                 assert abs(next_box['width']-next_box['height'])<1
                 page.locator('#nextStep').click()
                 expect(page.locator('#planHeading')).to_have_text('Who is coming along?')
-                expect(page.locator('#itemsHeading')).to_have_text('What is coming with us?')
+                expect(page.locator('[data-kind="items"],[data-add-kind="items"]')).to_have_count(0)
+                expect(page.locator('#start')).not_to_be_visible()
+                expect(page.locator('#nextStep')).to_be_visible()
                 assert abs(page.locator('#planHeading').bounding_box()['y']-opening_y)<1
+                page.screenshot(path='/tmp/readysteady-people-page.png',full_page=True)
+                page.locator('#nextStep').click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','3')
+                expect(page.locator('#planHeading')).to_have_text('What is coming with us?')
+                expect(page.locator('[data-kind="people"],[data-add-kind="people"]')).to_have_count(0)
                 expect(page.locator('#start')).to_be_enabled()
                 expect(page.locator('#nextStep')).not_to_be_visible()
                 start_box=page.locator('#start').bounding_box()
                 assert abs(start_box['x']-next_box['x'])<1 and abs(start_box['y']-next_box['y'])<1
+                page.screenshot(path='/tmp/readysteady-items-page.png',full_page=True)
                 expect(page.locator('#itemCount,.items-guidance')).to_have_count(0)
                 # Names grow downwards; first-row photos stay aligned at each viewport.
                 for width,height in [(390,844),(768,1024),(1024,768)]:
@@ -106,7 +114,9 @@ def run(engine):
                 page.get_by_role('button',name='Walking',exact=True).click()
                 page.locator('#nextStep').click()
                 for kind,name in names:
-                    if kind in ['items','people']:page.get_by_role('button',name=name,exact=True).click()
+                    if kind in ['items','people']:
+                        open_step(page,kind)
+                        page.get_by_role('button',name=name,exact=True).click()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(6)
                 page.get_by_role('button',name='Book',exact=True).click()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(5)
@@ -121,6 +131,14 @@ def run(engine):
                 expect(page.locator('#uploadDialog')).not_to_be_visible()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(6)
                 expect(page.get_by_role('button',name='New item',exact=True)).to_be_visible()
+                page.locator('[data-edit-kind="people"]').first.click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','2')
+                expect(page.locator('[data-kind="items"]')).to_have_count(0)
+                page.locator('[data-edit-kind="items"]').first.click()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','3')
+                expect(page.locator('[data-kind="people"]')).to_have_count(0)
+                expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(6)
+
                 page.set_viewport_size({'width':320,'height':600});page.evaluate('window.scrollTo(0,0)')
                 expect(page.locator('#scrollCue')).to_be_visible()
                 expect(page.locator('#start')).to_be_in_viewport()

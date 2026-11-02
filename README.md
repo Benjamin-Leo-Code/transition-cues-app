@@ -26,7 +26,7 @@ No GitHub token is needed for this public repository. You do not need to copy fi
 
 Select one or more locations in visit order, then tap the floating circular **Next** arrow at the bottom right. On **How are we travelling?**, select one or more transport modes and tap **Next** again. A selection is required on each of these pages; selecting a picture again removes it. Numbered marks show the order. There is no stop-count control.
 
-On the final page, **Who is coming along?** and **What is coming with us?** are both optional. Select as many people and items as you need, then tap the floating **Show the plan** button in the same corner. The first row of each category shows up to three most-used pictures; the remaining pictures appear in rows of four on phones. Usage is shared across devices; ties keep library order.
+The third page, **Who is coming along?**, is optional: select people or tap **Next** to skip. The fourth and final page, **What is coming with us?**, contains Items only. Select as many items as you need, or leave it empty, then tap the floating **Show the plan** button in the same corner. The first row of each category shows up to three most-used pictures; the remaining pictures appear in rows of four on phones. Usage is shared across devices; ties keep library order.
 
 The grouped summary at the top replaces the logo and settings cog after the first location is selected. Each category wraps beneath its own glyph. Tap a thumbnail to edit that category or **Reset** to clear the plan. A scroll cue appears while more choices remain below; the floating action stays available while scrolling. The locked display shows locations as **To**, **Then** and transport as **By**, **Then**, followed by optional People and Items. Ordered selections survive reloads, including older single-location/transport plans. Tap five times within three seconds to finish.
 
@@ -64,7 +64,8 @@ Screenshots use coloured test placeholders, not family photographs:
 - [Frequently used choices on a phone](docs/screenshots/frequent-choices.png)
 - [Multi-location and transport journey](docs/screenshots/multiple-locations.png)
 - [Transport selection with thumbnail summary](docs/screenshots/transport.png)
-- [Combined People and Items page](docs/screenshots/companions.png)
+- [People page](docs/screenshots/people.png)
+- [Items page](docs/screenshots/items.png)
 - [Floating plan button on a phone](docs/screenshots/floating-plan.png)
 - [Add item](docs/screenshots/add-item.png)
 - [Manage photos](docs/screenshots/manage-photos.png)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.39
+
+- Give What is coming with us? its own final Items page.
+- Keep People optional with Next available even without a selection; show Show the plan only on Items.
+- Make People and Items summary thumbnails open their respective pages.
+
 ## 1.0.38
 
 - Remove stop-count selection and allow multiple ordered locations and transport modes.

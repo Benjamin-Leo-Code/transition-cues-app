@@ -38,12 +38,12 @@ function renderChoose(focusStep=false) {
   selected.people=selected.people.map(item=>state.people.find(x=>x.id===item.id)).filter(Boolean);
   if(!selected.places){selected.transport=null;selected.transports=[];selected.items=[];selected.people=[];planStep=0;}
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
-  planStep=Math.min(planStep,2);
+  planStep=Math.min(planStep,3);
   const selectionGroups=planKinds.map((key,index)=>{
     const pictures=key==='places'?chosenLocations():key==='transport'?chosenTransports():Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[];
     if(!pictures.length)return null;
     const [,label,icon]=uploadCategories.find(([kind])=>kind===key);
-    return {html:`<div class="plan-group" data-selection-group="${key}" role="group" aria-label="${label}"><span class="plan-category" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><div class="plan-group-pictures">${pictures.map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`).join('')}</div></div>`};
+    return {html:`<div class="plan-group" data-selection-group="${key}" role="group" aria-label="${label}"><span class="plan-category" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><div class="plan-group-pictures">${pictures.map(item=>`<button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${index}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button>`).join('')}</div></div>`};
   }).filter(Boolean);
   const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${selectionGroups.map(group=>group.html).join('')}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
   function cards(kind) {
@@ -56,12 +56,12 @@ function renderChoose(focusStep=false) {
     }
     return `<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}<div class="grid other-choices">${other.map(picture).join('')}<button type="button" class="picture add-picture" data-add-kind="${kind}" aria-label="Add item to ${kind==='places'?'Places':kind==='transport'?'Transport':kind==='people'?'People':'Items'}"><span class="add-picture-symbol" aria-hidden="true">＋</span><span class="name">Add item</span></button></div></div>`;
   }
-  const title=['Where are we going?','How are we travelling?','Who is coming along?'][planStep];
-  const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
-  const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us?</h2><p class="optional-label">Optional</p></div></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
-  const canContinue=planStep===0?!!selected.places:!!selected.transport;
-  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="plan-actions"><button type="button" id="nextStep" class="plan-fab" aria-label="Next" title="Next" ${planStep<2&&canContinue?'':'hidden'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button><button type="button" id="start" class="plan-fab plan-fab-start" aria-label="Show the plan" ${planStep===2?'':'hidden'} ${selected.places&&selected.transport?'':'disabled'}>Show<br>the plan</button></div><button type="button" id="scrollCue" class="scroll-cue" hidden><span>Scroll for more</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`,'choose',progress);
-  $('#nextStep').onclick=()=>{if(!canContinue||planStep>=2)return;planStep++;renderChoose(true);};
+  const title=['Where are we going?','How are we travelling?','Who is coming along?','What is coming with us?'][planStep];
+  const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep>=2?'<p class="optional-label">Optional</p>':''}</div></div>`;
+  const choices=cards(planKinds[planStep]);
+  const canContinue=planStep===0?!!selected.places:planStep===1?!!selected.transport:true;
+  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="plan-actions"><button type="button" id="nextStep" class="plan-fab" aria-label="Next" title="Next" ${planStep<3&&canContinue?'':'hidden'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button><button type="button" id="start" class="plan-fab plan-fab-start" aria-label="Show the plan" ${planStep===3?'':'hidden'} ${selected.places&&selected.transport?'':'disabled'}>Show<br>the plan</button></div><button type="button" id="scrollCue" class="scroll-cue" hidden><span>Scroll for more</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`,'choose',progress);
+  $('#nextStep').onclick=()=>{if(!canContinue||planStep>=3)return;planStep++;renderChoose(true);};
   $('#scrollCue').onclick=()=>window.scrollBy({top:window.innerHeight*.65,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   queueScrollCue();
   app.querySelectorAll('[data-add-kind]').forEach(button=>button.onclick=()=>openUpload(button.dataset.addKind));
@@ -74,7 +74,7 @@ function renderChoose(focusStep=false) {
     renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
   });
   if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;planStep=0;renderChoose(true);};
-  app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);const kind=button.dataset.editKind;renderChoose(true);if(kind==='items'){$('#itemsHeading').focus({preventScroll:true});$('#itemsHeading').scrollIntoView({block:'start'});}});
+  app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);renderChoose(true);});
   $('#start').onclick=()=>{
     if(!selected.places||!selected.transport)return;
     pendingJourney={places:selected.places,locations:[...chosenLocations()],transport:selected.transport,transports:[...chosenTransports()],items:[...selected.items],people:[...selected.people]};
