@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.37
+
+- Significantly reduce space between Reset and the Transport/People headings.
+- Move the opening Places heading up by the same amount to keep the questions aligned.
+
 ## 1.0.36
 
 - Reduce the opening logo, title and subtitle by 40%.

@@ -88,3 +88,6 @@
 
 /* Keep content below native status-bar/scroll-edge effects, including standalone PWAs. */
 :root{--top-clearance:calc(env(safe-area-inset-top,0px) + 12px)}.shell{padding-top:var(--top-clearance)}.locked{padding-top:calc(4vh + var(--top-clearance))}.locked:is(.has-items,.has-people){padding-top:calc(2vh + var(--top-clearance))}#planDialog{padding-top:calc(clamp(24px,6vw,72px) + var(--top-clearance))}dialog:not(#planDialog){position:fixed;inset:var(--top-clearance) 0 12px;max-height:calc(100dvh - var(--top-clearance) - 24px);margin:auto;overflow-y:auto}
+
+/* Bring each question closer to the header and Reset control. */
+.planner-header+#planStep>.wizard-heading{margin-top:0}.planner-header+#planStep>.wizard-heading h1{margin-top:0}
