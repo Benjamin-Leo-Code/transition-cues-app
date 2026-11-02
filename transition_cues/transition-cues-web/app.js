@@ -60,7 +60,9 @@ function renderChoose(focusStep=false) {
   const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
   const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
-  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${planStep===0?`<fieldset class="location-count"><legend>Number of stops</legend><div class="stop-segments">${[1,2,3].map(count=>`<button type="button" data-location-count="${count}" aria-pressed="${locationCount===count}">${count}</button>`).join('')}</div></fieldset>`:''}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${chosenLocations().length===locationCount&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
+  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${planStep===0?`<fieldset class="location-count"><legend>Number of stops</legend><div class="stop-segments">${[1,2,3].map(count=>`<button type="button" data-location-count="${count}" aria-pressed="${locationCount===count}">${count}</button>`).join('')}</div></fieldset>`:''}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${chosenLocations().length===locationCount&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div><button type="button" id="scrollCue" class="scroll-cue" hidden><span>${planStep===2?'Scroll to finish':'Scroll for more'}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`,'choose',progress);
+  $('#scrollCue').onclick=()=>window.scrollBy({top:window.innerHeight*.65,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  queueScrollCue();
   app.querySelectorAll('[data-add-kind]').forEach(button=>button.onclick=()=>openUpload(button.dataset.addKind));
   app.querySelectorAll('[data-location-count]').forEach(button=>button.onclick=()=>{locationCount=Number(button.dataset.locationCount);selected.locations=chosenLocations().slice(0,locationCount);selected.places=selected.locations[0]||null;renderChoose();app.querySelector(`[data-location-count="${locationCount}"]`).focus({preventScroll:true});});
 
@@ -94,6 +96,18 @@ function renderChoose(focusStep=false) {
   };
   if(focusStep){$('#planHeading').focus({preventScroll:true});window.scrollTo(0,0);}
 }
+let scrollCueFrame=0;
+function queueScrollCue(){
+  if(scrollCueFrame)return;
+  scrollCueFrame=requestAnimationFrame(()=>{
+    scrollCueFrame=0;
+    const cue=$('#scrollCue');if(!cue)return;
+    cue.hidden=document.documentElement.scrollHeight-window.scrollY-window.innerHeight<=24;
+  });
+}
+window.addEventListener('scroll',queueScrollCue,{passive:true});
+window.addEventListener('resize',queueScrollCue);
+new ResizeObserver(queueScrollCue).observe(app);
 function beginJourney() {
   if(!pendingJourney)return;
   try { localStorage.setItem('tc-locked-journey', JSON.stringify(pendingJourney)); }

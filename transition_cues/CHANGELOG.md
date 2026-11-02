@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.31
+
+- Keep Show the plan at the bottom of the page after all choices, instead of floating above them.
+- Add a floating scroll cue while more choices remain below the viewport; tap it to scroll down.
+
 ## 1.0.30
 
 - Rename Number of locations to Number of stops and use a sliding segmented control for 1–3 stops, with arrow-key and Home/End support.

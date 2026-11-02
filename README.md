@@ -24,7 +24,7 @@ No GitHub token is needed for this public repository. You do not need to copy fi
 
 ## Use
 
-Choose one to three locations in visit order, then transport. The **Number of stops** segmented control defaults to one. The first row shows up to three most-used pictures; other choices appear below in rows of four on phones. Usage is saved when a plan is shown and is shared across devices; ties keep the library order. After choosing a place, a grouped summary of selected pictures replaces the logo and settings cog. Tap a thumbnail to edit an earlier choice, or **Reset** below the row to clear all choices and start again. On the final page, optionally select people first and up to four bring-along items beneath them. Tap **Show the plan** when ready. The locked display shows each location as **To**, **Then**, **Then**, alongside transport, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey works in portrait and landscape. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
+Choose one to three locations in visit order, then transport. The **Number of stops** segmented control defaults to one. The first row shows up to three most-used pictures; other choices appear below in rows of four on phones. Usage is saved when a plan is shown and is shared across devices; ties keep the library order. After choosing a place, a grouped summary of selected pictures replaces the logo and settings cog. Tap a thumbnail to edit an earlier choice, or **Reset** below the row to clear all choices and start again. On the final page, optionally select people first and up to four bring-along items beneath them. Scroll through the choices and tap **Show the plan** at the bottom when ready. A floating scroll cue appears when there is more below; tap it or swipe to continue. The locked display shows each location as **To**, **Then**, **Then**, alongside transport, followed by selected people as circular portraits and bring-along items in side-by-side groups. The journey works in portrait and landscape. People and items are optional; tap any selected picture again to deselect it. Tap five times within three seconds to finish. Reloading restores the locked journey in that browser.
 
 Open the app on your phone or tablet and tap **Add item** at the end of the relevant Places, Transport, People or Items list. Choose a photo, enter its name and tap **Add to library**. The category is set by the list you opened it from. Use **Crop photo** to adjust the square frame before uploading. The new picture appears in that list without changing your current plan selections.
 
@@ -61,6 +61,7 @@ Screenshots use coloured test placeholders, not family photographs:
 - [Three-location journey](docs/screenshots/multiple-locations.png)
 - [Transport selection with thumbnail summary](docs/screenshots/transport.png)
 - [Combined People and Items page](docs/screenshots/companions.png)
+- [Bottom-of-page plan button on a phone](docs/screenshots/plan-bottom.png)
 - [Add item](docs/screenshots/add-item.png)
 - [Manage photos](docs/screenshots/manage-photos.png)
 - [Portrait journey display](docs/screenshots/portrait.png)

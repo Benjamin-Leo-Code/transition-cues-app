@@ -99,6 +99,18 @@ def run(engine):
                 assert page.locator('[data-choice-group="people"]').bounding_box()['y']<page.locator('[data-choice-group="items"]').bounding_box()['y']
                 expect(page.locator('.step-number')).to_have_count(0)
                 expect(page.locator('#nextStep')).to_have_count(0)
+                page.set_viewport_size({'width':390,'height':600})
+                page.evaluate('window.scrollTo(0,0)')
+                expect(page.get_by_role('button',name='Scroll to finish',exact=True)).to_be_visible()
+                page.locator('#scrollCue').click()
+                page.wait_for_function('()=>window.scrollY>0')
+                page.evaluate('window.scrollTo(0,document.documentElement.scrollHeight)')
+                expect(page.locator('#scrollCue')).not_to_be_visible()
+                expect(page.locator('#start')).to_be_in_viewport()
+                assert page.locator('.wizard-actions').evaluate("el=>getComputedStyle(el).position")=='static'
+                assert page.locator('#start').bounding_box()['y']>=page.locator('#planStep').bounding_box()['y']+page.locator('#planStep').bounding_box()['height']
+                page.screenshot(path='/tmp/readysteady-plan-bottom.png',full_page=True)
+
                 # Only the current category is rendered; mixed-length card names remain aligned.
                 for width,height in [(390,844),(768,1024),(1024,768),(1280,900)]:
                     page.set_viewport_size({'width':width,'height':height})
