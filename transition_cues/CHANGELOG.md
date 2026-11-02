@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.35
+
+- Keep the enlarged brand and cog on one line with wider system fonts on narrow phones.
+- Replace a corrupt test PNG rejected by Safari with a valid image and verify browser checks using the CI browser versions.
+
 ## 1.0.34
 
 - Simplify the pre-lock screen to A quick note, with unlock instructions on a separate line.

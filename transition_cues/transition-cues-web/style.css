@@ -80,3 +80,8 @@
 .planner-header:not(.selection-header){padding-top:12px;padding-bottom:36px}.brand{font-size:38px;line-height:1.1;gap:18px}.brand img{width:84px;height:84px;flex:none;border-radius:20px}.brand small{font-size:22px;line-height:1.3;letter-spacing:.6px;margin-top:8px}
 @media(max-width:620px){.brand{font-size:32px;gap:10px}.brand img{width:72px;height:72px}.brand small{margin-top:6px}.planner-header:not(.selection-header){padding-top:16px;padding-bottom:44px}}
 @media(max-width:380px){.brand{font-size:clamp(24px,7.5vw,28px);gap:10px}.brand img{width:clamp(56px,16vw,64px);height:clamp(56px,16vw,64px)}.brand small{font-size:18px;margin-top:5px}}
+
+/* Reserve space for the cog rather than wrapping it beneath wider system fonts. */
+.planner-header:not(.selection-header){display:grid;grid-template-columns:minmax(0,1fr) 44px;column-gap:12px}.planner-header .brand,.planner-header .brand>span{min-width:0}.planner-header .brand>span{white-space:nowrap}
+@media(max-width:620px){.brand{font-size:clamp(26px,7.3vw,32px)}}
+@media(max-width:380px){.brand{font-size:clamp(20px,6.5vw,24px)}.brand small{font-size:clamp(16px,4.7vw,18px)}}

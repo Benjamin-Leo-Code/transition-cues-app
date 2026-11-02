@@ -11,7 +11,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server, Store
 
-PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII='
+PNG = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC'
 
 
 class AppTests(unittest.TestCase):

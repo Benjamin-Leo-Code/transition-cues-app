@@ -148,7 +148,7 @@ def run(engine):
                 # Adding within a category retains the plan and returns to its current step.
                 page.locator('[data-add-kind="items"]').click()
                 page.locator('#name').fill('New item')
-                page.locator('#photo').set_input_files({'name':'item.png','mimeType':'image/png','buffer':base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=')})
+                page.locator('#photo').set_input_files({'name':'item.png','mimeType':'image/png','buffer':base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC')})
                 page.locator('#uploadButton').click()
                 expect(page.locator('#uploadDialog')).not_to_be_visible()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','2')
@@ -233,7 +233,7 @@ def run(engine):
                 page.reload();expect(page.locator('#start')).not_to_be_visible()
                 # Shared usage ordering and an ordered three-stop journey.
                 page.evaluate("""async () => {
-                    const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';
+                    const image='iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC';
                     for(const name of ['Stop C','Stop D','Stop E','Stop F','Stop G']) await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'places',name,image})});
                     const state=await (await fetch('/api/state')).json();
                     for(const name of ['Stop C','Stop C','Stop D','Stop E']) await fetch('/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({places:[state.places.find(x=>x.name===name).id],transport:[state.transport[0].id]})});

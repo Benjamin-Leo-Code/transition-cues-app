@@ -43,7 +43,7 @@ else:
         start()
         first = probe + '''assert 'setupRequired' not in state
 cookie=''
-photo='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII='
+photo='iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC'
 for kind,name in [('places','Home'),('items','Drink'),('people','Person A')]:
  record=json.load(request('/api/items',{'kind':kind,'name':name,'image':photo},cookie))
  if kind=='people':
@@ -81,5 +81,5 @@ print('PASS: replacement container preserves library and images in /data')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image', default='transition-cues-ha-check:1.0.34')
+    parser.add_argument('--image', default='transition-cues-ha-check:1.0.35')
     run(parser.parse_args().image)

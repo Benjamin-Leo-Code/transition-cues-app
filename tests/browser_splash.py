@@ -24,7 +24,7 @@ def run(engine):
                 page.on('pageerror',lambda e:errors.append(str(e)))
                 url=f'http://127.0.0.1:{server.server_port}'
                 page.goto(url)
-                page.evaluate("""async()=>{const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';for(const [kind,name] of [['places','Park'],['transport','Bus']])await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})})}""")
+                page.evaluate("""async()=>{const image='iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGOcs76DgZaAiaamj1owasGoBaMWjFowasGoBaMWjFowasGoBVQEAKxHAhNnbcHJAAAAAElFTkSuQmCC';for(const [kind,name] of [['places','Park'],['transport','Bus']])await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image})})}""")
                 def choose(target):
                     target.get_by_role('button',name='Park',exact=True).click()
                     target.get_by_role('button',name='Bus',exact=True).click()
