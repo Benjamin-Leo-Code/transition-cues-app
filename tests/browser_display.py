@@ -31,8 +31,8 @@ def run(engine):
                     page.set_viewport_size({'width':width,'height':height})
                     brand=page.locator('.brand').bounding_box();nav=page.locator('.nav').bounding_box()
                     assert brand['x']+brand['width']<=nav['x']+1,(width,brand,nav)
-                    assert page.locator('.brand img').bounding_box()['width']>=56
-                    assert nav['y']>=brand['y']-1 and nav['y']+nav['height']<=brand['y']+brand['height']+1,(width,brand,nav)
+                    assert page.locator('.brand img').bounding_box()['width']>=33.5
+                    assert abs(nav['y']+nav['height']/2-brand['y']-brand['height']/2)<1,(width,brand,nav)
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
 
                 expect(page.get_by_role('link',name='Picture library',exact=True)).to_have_count(0)

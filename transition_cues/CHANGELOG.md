@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.36
+
+- Reduce the opening logo, title and subtitle by 40%.
+- Add top safe-area spacing plus a small inset across planner, photo management, journey display and dialogs to keep content clear of native PWA top effects.
+
 ## 1.0.35
 
 - Keep the enlarged brand and cog on one line with wider system fonts on narrow phones.
