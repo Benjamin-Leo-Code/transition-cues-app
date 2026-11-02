@@ -4,7 +4,7 @@ const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const app = $('#app');
 let state, selected = {places:null, transport:null, items:[], people:[]}, category = 'places', locked = null, taps = [], pendingDelete = null;
 let locationCount=1;
-let toastTimer, pendingJourney = null, pendingEdit = null, planStep = 0, reorderBusy = false, settingsTabFocus = false;
+let toastTimer, pendingJourney = null, pendingEdit = null, planStep = 0, reorderBusy = false;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 async function api(path, data) {
   let response;
@@ -16,45 +16,18 @@ async function api(path, data) {
   return result;
 }
 async function refresh() { state = await api('state'); state.items ??= []; state.people ??= []; }
-const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
 const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
 const backIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 function frame(content, route, selectionHeader='') {
   document.body.classList.remove('lock-active');
-  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'planner-header':'subpage-header'} ${selectionHeader?'selection-header':''}">${selectionHeader||`${route==='choose'?'<a class="brand" href="#choose"><img src="/icons/icon-192.png?v=1.0.22" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':`<a class="back-plan header-back" href="#choose" aria-label="Back to plan" title="Back to plan">${backIcon}</a><h1 class="header-title">Settings</h1>`}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}`}</header>${content}</div>`;
+  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'planner-header':'subpage-header'} ${selectionHeader?'selection-header':''}">${selectionHeader||`${route==='choose'?'<a class="brand" href="#choose"><img src="/icons/icon-192.png?v=1.0.22" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':`<a class="back-plan header-back" href="#choose" aria-label="Back to plan" title="Back to plan">${backIcon}</a><h1 class="header-title">Manage photos</h1>`}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}`}</header>${content}</div>`;
 }
 function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>${extra}</div>`; }
 
-function settingsHeader(section) {
-  return `<div class="settings-segments" role="tablist" aria-label="Settings sections">${[['photos','Add photos',libraryIcon],['library','Manage photos',libraryIcon],['more','More settings',settingsIcon]].map(([key,label,icon])=>`<button type="button" role="tab" id="settingsTab-${key}" aria-selected="${key===section}" aria-controls="settingsPanel" tabindex="${key===section?'0':'-1'}" data-settings-section="${key}">${icon}<span>${label}</span></button>`).join('')}</div>`;
-}
-function wireSettingsSections(section) {
-  const tabs=[...app.querySelectorAll('[data-settings-section]')];
-  function selectTab(tab) {
-    const target={photos:'#settings',library:'#settings-manage',more:'#settings-more'}[tab.dataset.settingsSection];
-    if(tab.dataset.settingsSection===section){tab.focus();return;}
-    settingsTabFocus=true;location.hash=target;
-  }
-  tabs.forEach((tab,index)=>{
-    tab.onclick=()=>selectTab(tab);
-    tab.onkeydown=e=>{
-      const next={ArrowLeft:(index+tabs.length-1)%tabs.length,ArrowRight:(index+1)%tabs.length,Home:0,End:tabs.length-1}[e.key];
-      if(next===undefined)return;
-      e.preventDefault();selectTab(tabs[next]);
-    };
-  });
-  if(settingsTabFocus){$('#settingsTab-'+section).focus({preventScroll:true});settingsTabFocus=false;}
+function settingsHeader() {
+  return `<div class="settings-segments category-segments" role="tablist" aria-label="Picture categories">${uploadCategories.map(([key,label,icon])=>`<button type="button" role="tab" id="categoryTab-${key}" aria-selected="${key===category}" aria-pressed="${key===category}" aria-controls="settingsPanel" tabindex="${key===category?'0':'-1'}" data-tab="${key}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span></button>`).join('')}</div>`;
 }
 const MAX_BRING_ITEMS = 4;
-function empty(kind) {
-  const content = {
-    places:['⌂','A familiar place to start','a photo of a familiar place','a place'],
-    transport:['↗','How will we get there?','a photo of your car, a bus, walking, or another way to travel','transport'],
-    items:['＋','What shall we bring?','photos of things to take, like a drink, headphones or a favourite toy','an item'],
-    people:['☺','Who is coming along?','a photo of someone who joins your journeys','a person']
-  }[kind];
-  return `<div class="empty"><div class="empty-symbol" aria-hidden="true">${content[0]}</div><h3>${content[1]}</h3><p>Add ${content[2]}.<br>Real, familiar pictures make each journey easier to recognise.</p><a class="secondary" href="#settings">Add ${content[3]} <span aria-hidden="true">＋</span></a></div>`;
-}
 const planKinds=['places','transport','people','items'];
 const chosenLocations=()=>selected.locations||(selected.places?[selected.places]:[]);
 function renderChoose(focusStep=false) {
@@ -82,12 +55,13 @@ function renderChoose(focusStep=false) {
       const full=kind==='items'&&!active&&selected.items.length>=MAX_BRING_ITEMS;
       return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}" ${full?'disabled':''}><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">${kind==='places'&&locationCount>1&&active?chosenLocations().findIndex(x=>x.id===item.id)+1:'✓'}</span><span class="name">${esc(item.name)}</span></button>`;
     }
-    return state[kind].length?`<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}${other.length?`<div class="grid other-choices">${other.map(picture).join('')}</div>`:''}</div>`:empty(kind);
+    return `<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}<div class="grid other-choices">${other.map(picture).join('')}<button type="button" class="picture add-picture" data-add-kind="${kind}" aria-label="Add item to ${kind==='places'?'Places':kind==='transport'?'Transport':kind==='people'?'People':'Items'}"><span class="add-picture-symbol" aria-hidden="true">＋</span><span class="name">Add item</span></button></div></div>`;
   }
   const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
   const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
   frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${planStep===0?`<fieldset class="location-count"><legend>Number of locations</legend><div>${[1,2,3].map(count=>`<button type="button" data-location-count="${count}" aria-pressed="${locationCount===count}">${count}</button>`).join('')}</div></fieldset>`:''}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${chosenLocations().length===locationCount&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
+  app.querySelectorAll('[data-add-kind]').forEach(button=>button.onclick=()=>openUpload(button.dataset.addKind));
   app.querySelectorAll('[data-location-count]').forEach(button=>button.onclick=()=>{locationCount=Number(button.dataset.locationCount);selected.locations=chosenLocations().slice(0,locationCount);selected.places=selected.locations[0]||null;renderChoose();app.querySelector(`[data-location-count="${locationCount}"]`).focus({preventScroll:true});});
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
@@ -138,7 +112,7 @@ function finishJourney() {
   catch { toast('Allow browser storage to finish this saved plan.');return; }
   locationCount=(locked.locations||[locked.places]).length;
   selected={places:locked.places,locations:locked.locations||[locked.places],transport:locked.transport,items:locked.items||[],people:locked.people||[]};
-  state ??= {places:locked.locations||[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[],returnUrl:''};
+  state ??= {places:locked.locations||[locked.places],transport:[locked.transport],items:locked.items||[],people:locked.people||[]};
   locked=null;taps=[];planStep=0;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
   location.hash='choose';renderChoose();
@@ -162,17 +136,26 @@ const uploadCategories = [
   ['items','Items','<circle cx="6.5" cy="5" r="3"/><circle cx="17.5" cy="5" r="3"/><ellipse cx="12" cy="18" rx="5" ry="4"/><circle cx="7" cy="20" r="2.5"/><circle cx="17" cy="20" r="2.5"/><circle cx="12" cy="10" r="6"/><ellipse cx="12" cy="12" rx="2" ry="1.5"/><path d="M9 9h.01M15 9h.01"/>'],
   ['people','People','<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/>']
 ];
-function renderManage(section='photos') {
-  frame(settingsHeader(section)+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-${section}">`+
-    `${section==='photos'?`<div class="add-photos"><section class="panel" aria-label="Upload a picture"><form id="uploadForm"><div><label for="photo">Photo</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required><p class="help">JPEG, PNG or WebP. Photos fill a square automatically. Use Crop photo to zoom out, adjust framing and colour any gaps. People display as circles.</p><img id="photoPreview" class="preview-image" alt="Selected photo preview" hidden><button id="cropUpload" class="secondary" type="button" hidden>Crop photo</button></div><div><label for="name">Name</label><input id="name" maxlength="60" placeholder="e.g. Park" required></div><fieldset class="kind-picker"><legend>What is it?</legend><div class="kind-options">${categoryChoices('kind',category)}</div></fieldset><p id="uploadError" class="error" role="alert"></p><button class="primary" type="submit" id="uploadButton">Add to library <span aria-hidden="true">＋</span></button></form></section></div>`:`<div class="photo-library"><section aria-label="Existing pictures"><div class="tabs" aria-label="Picture categories">${[['places','Places'],['transport','Transport'],['items','Items'],['people','People']].map(([k,t])=>`<button data-tab="${k}" aria-pressed="${category===k}">${t} · ${state[k].length}</button>`).join('')}</div><div id="library"></div></section></div>`}</section>`, 'settings');
-  wireSettingsSections(section);
-  if(section==='library'){
-    app.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{category=button.dataset.tab;renderManage('library');});
-    renderLibrary();return;
-  }
-  const uploadKind=()=>$('#uploadForm input[name="kind"]:checked').value;
-  let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0;
-  const uploadForm=$('#uploadForm');
+function renderManage() {
+  frame(settingsHeader()+`<section id="settingsPanel" class="photo-library" role="tabpanel" aria-labelledby="categoryTab-${category}"><div id="library"></div></section>`, 'settings');
+  const tabs=[...app.querySelectorAll('[data-tab]')];
+  function changeTab(tab,focus=false){category=tab.dataset.tab;renderManage();if(focus)$('#categoryTab-'+category).focus();}
+  tabs.forEach((tab,index)=>{
+    tab.onclick=()=>changeTab(tab);
+    tab.onkeydown=e=>{
+      const next={ArrowLeft:(index+tabs.length-1)%tabs.length,ArrowRight:(index+1)%tabs.length,Home:0,End:tabs.length-1}[e.key];
+      if(next===undefined)return;e.preventDefault();changeTab(tabs[next],true);
+    };
+  });
+  renderLibrary();
+}
+function openUpload(kind) {
+  const dialog=$('#uploadDialog');
+  $('#uploadForm').reset();$('#uploadError').textContent='';$('#photoPreview').hidden=true;$('#cropUpload').hidden=true;$('#uploadButton').disabled=false;
+  $('#uploadTitle').textContent='Add item';$('#uploadButton').textContent='Add to library ＋';$('#uploadCancel').disabled=false;
+  dialog.showModal();
+  const uploadKind=()=>kind;
+  let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0, saving = false;
   let wasPerson = uploadKind()==='people';
   const defaultCrop=()=>{
     const current=++revision, file=$('#photo').files[0];
@@ -184,11 +167,11 @@ function renderManage(section='photos') {
       if(!file)return;
       try {
         const image=await preparePhoto(file,1);
-        if(current!==revision || !document.contains(uploadForm))return;
+        if(current!==revision || !dialog.open)return;
         croppedImage=image; $('#photoPreview').src='data:image/jpeg;base64,'+image;
         $('#photoPreview').hidden=false; $('#cropUpload').hidden=false;
-      } catch(error) { if(current===revision && document.contains(uploadForm))$('#uploadError').textContent=error.message; }
-      finally { if(current===revision && document.contains(uploadForm))$('#uploadButton').disabled=false; }
+      } catch(error) { if(current===revision && dialog.open)$('#uploadError').textContent=error.message; }
+      finally { if(current===revision && dialog.open)$('#uploadButton').disabled=false; }
     })();
   };
   const updateUploadKind=()=>{
@@ -197,7 +180,9 @@ function renderManage(section='photos') {
     if(circle!==wasPerson)defaultCrop();
     wasPerson=circle;
   };
-  app.querySelectorAll('input[name="kind"]').forEach(input=>input.onchange=updateUploadKind);
+  $('#uploadCancel').onclick=()=>dialog.close();
+  dialog.oncancel=e=>{if(saving)e.preventDefault();};
+  dialog.onclose=()=>{revision++;if(previewUrl)URL.revokeObjectURL(previewUrl);$('#uploadForm').reset();};
   updateUploadKind();
   $('#photo').onchange=()=>{
     if(previewUrl) URL.revokeObjectURL(previewUrl);
@@ -214,10 +199,10 @@ function renderManage(section='photos') {
     } catch(error) { $('#uploadError').textContent=error.message; }
   };
   $('#uploadForm').onsubmit=async e=>{
-    e.preventDefault(); const button=$('#uploadButton'); button.disabled=true;button.textContent='Adding picture…'; $('#uploadError').textContent='';
-    try { await preparing; const kind=uploadKind(); const image=croppedImage || await preparePhoto($('#photo').files[0],1); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);renderManage();toast('Picture added to your library.'); }
+    e.preventDefault();saving=true;$('#uploadCancel').disabled=true;const button=$('#uploadButton'); button.disabled=true;button.textContent='Adding picture…'; $('#uploadError').textContent='';
+    try { await preparing; const kind=uploadKind(); const image=croppedImage || await preparePhoto($('#photo').files[0],1); await api('items',{kind,name:$('#name').value,image,original:await preparePhoto($('#photo').files[0])}); await refresh();category=kind;if(previewUrl) URL.revokeObjectURL(previewUrl);dialog.close();renderChoose();toast('Picture added to your library.'); }
     catch(error) { $('#uploadError').textContent=error.message; }
-    finally { if(document.contains(button)){button.disabled=false;button.textContent='Add to library ＋';} }
+    finally { saving=false;$('#uploadCancel').disabled=false;button.disabled=false;button.textContent='Add to library ＋'; }
   };
 }
 function validatePhoto(file) {
@@ -305,7 +290,7 @@ $('#editForm').onsubmit=async e=>{
     const body=editing.action==='rename'?{kind:editing.kind,id:editing.id,sourceName:editing.sourceName,name:$('#editName').value.trim()}:{kind:editing.kind,id:editing.id,targetKind:target};
     await api(editing.action,body);await refresh();
     if(target)category=target;
-    $('#editDialog').close();renderManage('library');
+    $('#editDialog').close();renderManage();
     app.querySelector(`[data-${editing.action}="${editing.id}"]`)?.focus({preventScroll:true});
     toast(editing.action==='rename'?'Name updated.':'Picture moved to its new category.');
   } catch(error){$('#editError').textContent=error.message;}
@@ -316,7 +301,7 @@ function orderControl(item,direction,disabled) {
 }
 function renderLibrary() {
   const items=state[category];
-  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map((x,index)=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-order">${orderControl(x,'left',index===0)}${orderControl(x,'right',index===items.length-1)}</div><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Add your first picture using the form.</p></div>`;
+  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map((x,index)=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-order">${orderControl(x,'left',index===0)}${orderControl(x,'right',index===items.length-1)}</div><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Use Add item on the plan to add a picture to this category.</p></div>`;
   app.querySelectorAll('[data-order]').forEach(button=>button.onclick=async()=>{
     if(reorderBusy)return;
     const kind=category, id=button.dataset.order, direction=button.dataset.direction;
@@ -335,7 +320,7 @@ function renderLibrary() {
     button.disabled=true;
     try { await openCrop(item.originalImage || item.image, kind==='people', async image=>{
       await api('crop',{kind,id:item.id,sourceImage:item.image,image});
-      await refresh();renderManage('library');toast('Cropped picture saved. Locked journeys keep their current picture.');
+      await refresh();renderManage();toast('Cropped picture saved. Locked journeys keep their current picture.');
     }); } catch(error) { toast(error.message); }
     finally { button.disabled=false; }
   });
@@ -343,22 +328,16 @@ function renderLibrary() {
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.remove);pendingDelete={kind:category,id:item.id};$('#deleteText').textContent=`Remove “${item.name}” from the library? An already locked journey will keep its picture until it is finished.`;$('#deleteDialog').showModal();});
 }
 $('#deleteCancel').onclick=()=>$('#deleteDialog').close();
-$('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage('library');toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
-function renderSettings() {
-  frame(settingsHeader('more')+`<section id="settingsPanel" role="tabpanel" aria-labelledby="settingsTab-more"><div class="settings-grid"><section class="panel"><h2>Back to main screen</h2><p>Add the address of your main tablet screen. A return link will appear on the parent screens.</p><form id="returnForm"><div><label for="returnUrl">Main screen address</label><input id="returnUrl" type="url" placeholder="http://homeassistant.local:8123/…" value="${esc(state.returnUrl)}"></div><button class="primary">Save link</button><p id="returnError" class="error" role="alert"></p></form></section></div></section>`, 'settings');
-  wireSettingsSections('more');
-  $('#returnForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('settings',{returnUrl:$('#returnUrl').value.trim()});await refresh();renderSettings();toast('Return link saved.');}catch(error){$('#returnError').textContent=error.message;}finally{b.disabled=false;}};
-}
-
+$('#deleteForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await api('delete',pendingDelete);$('#deleteDialog').close();await refresh();renderManage();toast('Picture removed.');}catch(error){toast(error.message);}finally{b.disabled=false;}};
 async function route() {
   if($('#planDialog').open)$('#planDialog').close();
   if(locked){renderLocked();return;}
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
-  if(view==='settings')renderManage();else if(view==='manage'||view==='settings-manage')renderManage('library');else if(view==='settings-more')renderSettings();else renderChoose();
+  if(['settings','manage','settings-manage','settings-more'].includes(view))renderManage();else renderChoose();
 }
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#deleteDialog').open&&!$('#editDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#uploadDialog').open&&!$('#deleteDialog').open&&!$('#editDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});
 async function start() {
   try {
     const saved=localStorage.getItem('tc-locked-journey');

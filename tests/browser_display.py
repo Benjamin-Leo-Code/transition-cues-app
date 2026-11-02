@@ -1,5 +1,6 @@
 """Portrait/landscape layouts, long-name geometry, settings navigation and tap-to-exit."""
 import argparse
+import base64
 import os
 from pathlib import Path
 import sys
@@ -28,34 +29,23 @@ def run(engine):
                 expect(page.locator('.nav a')).to_have_count(1)
                 expect(page.get_by_role('link',name='Picture library',exact=True)).to_have_count(0)
                 page.get_by_role('link',name='Settings',exact=True).click()
-                expect(page.get_by_role('heading',name='Settings',exact=True)).to_be_visible()
+                expect(page.get_by_role('heading',name='Manage photos',exact=True)).to_be_visible()
                 expect(page.locator('.intro')).to_have_count(0)
                 assert page.get_by_role('link',name='Back to plan',exact=True).inner_text()==''
                 assert page.locator('.header-title').bounding_box()['x']>512
-                expect(page.get_by_role('tab',name='Add photos',exact=True)).to_have_attribute('aria-selected','true')
-                expect(page.locator('#uploadForm')).to_be_visible()
+                expect(page.locator('#uploadForm')).not_to_be_visible()
                 expect(page.locator('#returnForm')).to_have_count(0)
-                expect(page.get_by_text('On the tablet',exact=True)).to_have_count(0)
-                expect(page.locator('.settings-segments svg')).to_have_count(3)
-                page.screenshot(path='/tmp/readysteady-settings-photos.png',full_page=True)
-                expect(page.locator('#library')).to_have_count(0)
-                page.get_by_role('tab',name='Manage photos',exact=True).click()
+                expect(page.locator('.settings-segments svg')).to_have_count(4)
+                expect(page.get_by_role('tab',name='Place',exact=True)).to_have_attribute('aria-selected','true')
                 expect(page.locator('#library')).to_be_visible()
-                expect(page.locator('#uploadForm')).to_have_count(0)
-                expect(page.get_by_role('tab',name='Manage photos',exact=True)).to_have_attribute('aria-selected','true')
-                page.get_by_role('tab',name='Manage photos',exact=True).press('ArrowRight')
-                expect(page.get_by_role('tab',name='More settings',exact=True)).to_have_attribute('aria-selected','true')
-                expect(page.locator('#uploadForm')).to_have_count(0)
-                expect(page.locator('#settingsPanel h2')).to_have_count(1)
-                expect(page.locator('#settingsPanel h2')).to_have_text('Back to main screen')
-                expect(page.locator('#returnUrl')).to_be_visible()
-                page.screenshot(path='/tmp/readysteady-settings-more.png',full_page=True)
-                page.get_by_role('tab',name='More settings',exact=True).press('Home')
-                expect(page.get_by_role('tab',name='Add photos',exact=True)).to_be_focused()
-                expect(page.locator('#uploadForm')).to_be_visible()
-                page.get_by_role('tab',name='Add photos',exact=True).press('End')
-                expect(page.get_by_role('tab',name='More settings',exact=True)).to_be_focused()
-                expect(page.locator('#returnUrl')).to_be_visible()
+                page.get_by_role('tab',name='Place',exact=True).press('ArrowRight')
+                expect(page.get_by_role('tab',name='Transport',exact=True)).to_be_focused()
+                expect(page.get_by_role('tab',name='Transport',exact=True)).to_have_attribute('aria-selected','true')
+                page.get_by_role('tab',name='Transport',exact=True).press('End')
+                expect(page.get_by_role('tab',name='People',exact=True)).to_be_focused()
+                page.get_by_role('tab',name='People',exact=True).press('Home')
+                expect(page.get_by_role('tab',name='Place',exact=True)).to_be_focused()
+                page.screenshot(path='/tmp/readysteady-manage-photos.png',full_page=True)
                 page.get_by_role('link',name='Back to plan',exact=False).click()
                 expect(page.locator('#start')).not_to_be_visible()
                 names=[['places','An especially long destination name across several lines'],['transport','Bus'],['people','A person with a much longer name'],['people','Person B'],['items','Headphones with a very long name'],['items','Drink'],['places','Park'],['transport','A much longer name for the way we travel']]
@@ -67,6 +57,15 @@ def run(engine):
                 expect(page.locator('.step-number')).to_have_count(0)
                 expect(page.locator('[data-kind="transport"],[data-kind="items"],[data-kind="people"]')).to_have_count(0)
                 expect(page.locator('#start')).not_to_be_visible()
+                expect(page.locator('[data-choice-group="places"] .picture').last).to_have_attribute('data-add-kind','places')
+                page.locator('[data-add-kind="places"]').click()
+                expect(page.locator('#uploadForm')).to_be_visible()
+                expect(page.locator('#uploadForm input[name="kind"]')).to_have_count(0)
+                page.locator('#name').fill('Cancelled upload')
+                page.screenshot(path='/tmp/readysteady-add-item.png',full_page=True)
+                page.locator('#uploadCancel').click()
+                expect(page.locator('#uploadDialog')).not_to_be_visible()
+                expect(page.locator('[data-kind="places"]')).to_have_count(2)
                 page.screenshot(path='/tmp/readysteady-step-places.png',full_page=True)
                 page.get_by_role('button',name=names[0][1],exact=True).click()
                 expect(page.locator('#planStep')).to_have_attribute('data-step','1')
@@ -114,6 +113,17 @@ def run(engine):
                     for item_kind,name in names:
                         if kind==item_kind:page.get_by_role('button',name=name,exact=True).click()
                 expect(page.locator('.plan-thumbnail')).to_have_count(6)
+                # Adding within a category retains the plan and returns to its current step.
+                page.locator('[data-add-kind="items"]').click()
+                page.locator('#name').fill('New item')
+                page.locator('#photo').set_input_files({'name':'item.png','mimeType':'image/png','buffer':base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=')})
+                page.locator('#uploadButton').click()
+                expect(page.locator('#uploadDialog')).not_to_be_visible()
+                expect(page.locator('#planStep')).to_have_attribute('data-step','2')
+                expect(page.locator('.plan-thumbnail')).to_have_count(6)
+                expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(2)
+                expect(page.get_by_role('button',name='New item',exact=True)).to_be_visible()
+                expect(page.locator('[data-choice-group="items"] .picture').last).to_have_attribute('data-add-kind','items')
                 # Multi-select categories wrap beneath their own glyphs on a narrow phone.
                 page.set_viewport_size({'width':320,'height':844})
                 expect(page.locator('.plan-category svg')).to_have_count(4)
@@ -199,11 +209,11 @@ def run(engine):
                 page.reload()
                 expect(page.locator('[data-location-count="1"]')).to_have_attribute('aria-pressed','true')
                 expect(page.locator('[data-choice-group="places"] .frequent-choices .picture')).to_have_count(3)
-                expect(page.locator('[data-choice-group="places"] .other-choices .picture')).to_have_count(4)
+                expect(page.locator('[data-choice-group="places"] .other-choices .picture:not(.add-picture)')).to_have_count(4)
                 expect(page.locator('.frequent-choices .picture').first.locator('.name')).to_have_text('Stop C')
                 page.set_viewport_size({'width':390,'height':844})
                 frequent=page.locator('[data-choice-group="places"] .frequent-choices .picture').all()
-                other=page.locator('[data-choice-group="places"] .other-choices .picture').all()
+                other=page.locator('[data-choice-group="places"] .other-choices .picture:not(.add-picture)').all()
                 assert len({round(x.bounding_box()['y']) for x in frequent})==1
                 assert len({round(x.bounding_box()['y']) for x in other})==1
                 assert other[0].bounding_box()['y']>frequent[0].bounding_box()['y']

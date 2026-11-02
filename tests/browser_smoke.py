@@ -8,7 +8,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'transition_cues'))
 from server import make_server
 from playwright.sync_api import sync_playwright, expect
-from browser_helpers import track_fullscreen, leave_fullscreen, show_plan
+from browser_helpers import track_fullscreen, leave_fullscreen, show_plan, open_add, open_library
 
 
 def run():
@@ -34,20 +34,19 @@ def run():
                 phone = browser.new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True)
                 mobile = phone.new_page()
                 mobile.on('pageerror', lambda error: errors.append(str(error)))
-                mobile.goto(url + '/#settings')
-                expect(mobile.locator('#uploadForm')).to_be_visible()
+                mobile.goto(url + '/#choose')
                 # Test images are generated within the browser, never shipped in the real library.
                 for kind, name, color in [('places','Park','#9caf88'),('transport','Bus','#ddbd86'),('items','Drink','#a8c5d6'),('items','Headphones','#c5b5d3'),('items','Coat','#d7b4a2'),('items','Toy','#c0cdaa'),('items','Bag','#e0d1a2')]:
+                    open_add(mobile,kind)
                     png = mobile.evaluate('''([name,color]) => {const c=document.createElement('canvas');c.width=500;c.height=320;const x=c.getContext('2d');x.fillStyle=color;x.fillRect(0,0,500,320);x.fillStyle='#254d43';x.font='32px sans-serif';x.textAlign='center';x.fillText(name,250,170);return c.toDataURL('image/png').split(',')[1];}''', [name,color])
                     mobile.locator('#photo').set_input_files({'name':name+'.png','mimeType':'image/png','buffer':base64.b64decode(png)})
                     mobile.locator('#name').fill(name)
-                    mobile.get_by_role('radio',name={'places':'Place','transport':'Transport','items':'Items','people':'People'}[kind],exact=True).check()
                     mobile.locator('#uploadButton').click()
                     expect(mobile.locator('#name')).to_have_value('')
-                    mobile.get_by_role('tab',name='Manage photos',exact=True).click()
+                    expect(mobile.locator('#uploadDialog')).not_to_be_visible()
+                    open_library(mobile,kind)
                     expect(mobile.locator('.library-item strong', has_text=name)).to_be_visible()
-                    mobile.get_by_role('tab',name='Add photos',exact=True).click()
-                mobile.get_by_role('tab',name='Manage photos',exact=True).click()
+                open_library(mobile,'items')
                 mobile.screenshot(path='/tmp/transition-cues-phone.png', full_page=True)
                 assert mobile.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Phone layout overflows'
                 page.reload()
@@ -68,6 +67,7 @@ def run():
                 for name in ['Drink','Headphones','Coat','Toy']:
                     page.get_by_role('button', name=name, exact=True).click()
                 expect(page.locator('#itemCount')).to_have_text('4/4')
+                expect(page.locator('[data-add-kind="items"]')).to_be_enabled()
                 expect(page.get_by_role('button', name='Bag', exact=True)).to_be_disabled()
                 expect(page.locator('[data-kind="items"][aria-pressed="true"]')).to_have_count(4)
                 page.get_by_role('button', name='Headphones', exact=True).click()
@@ -127,11 +127,7 @@ def run():
                 expect(page.locator('#lockedSurface')).to_have_count(0)
                 expect(page.locator('#itemCount')).to_have_count(0)
                 expect(page.get_by_role('button', name='Drink', exact=True)).to_have_count(0)
-                mobile.get_by_role('tab', name='More settings', exact=True).click()
-                mobile.locator('#returnUrl').fill('http://homeassistant.local:8123/lovelace/0')
-                mobile.get_by_role('button', name='Save link').click()
-                expect(mobile.get_by_role('link', name='Back to main screen', exact=False)).to_be_visible()
-                expect(mobile.get_by_role('tab',name='More settings',exact=True)).to_have_attribute('aria-selected','true')
+                expect(mobile.locator('#returnForm,.return-link')).to_have_count(0)
                 assert not errors, errors
                 browser.close()
                 print('PASS: original flows; item uploads, optional selection, four-item cap, deselection, old journey restore, item layout at tablet/phone sizes, item snapshots after refresh and cross-device deletion; no browser errors.')

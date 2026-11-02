@@ -40,13 +40,11 @@ If you are starting with an empty library, stop the old add-on, install and star
 
 ## First launch and pictures
 
-The gear icon at the top right opens **Settings**, with **Add photos** selected by default. The Settings title sits at the right of its header. **Add photos** contains only the upload form. **Manage photos** contains the category tabs, saved pictures and crop, rename, transfer, reorder and delete actions. Choose **More settings** (cog icon) for the **Back to main screen** address; this is the only setting in that section. Use the chevron back button at the top left to return to journey selection. The segmented control supports the arrow keys and Home/End, and existing picture-library URLs open Manage photos.
+The gear icon opens **Manage photos**. The segmented category control shows **Place** (location pin), **Transport** (train), **Items** (teddy bear), and **People** (person). It switches the saved pictures below and supports arrow keys and Home/End. Use the chevron at the top left to return to the plan. Existing picture-library URLs also open Manage photos.
 
-No PIN or first-launch setup is required. Open the picture library to add your photos. Existing photo libraries and return links remain available after updating; obsolete saved PIN hashes are removed automatically.
+No PIN or first-launch setup is required. Existing pictures remain available after updating. Obsolete PIN hashes and saved return addresses are removed automatically; the app runs standalone.
 
-In **Settings → Add photos**, choose a photo, enter its name, then choose the **Place** (location pin), **Transport** (train), **Items** (teddy bear), or **People** (person) icon and add it. Open **Manage photos** and use the Places, Transport, Items and People tabs to browse and remove pictures. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
-
-## Manage existing pictures
+To add a picture, tap **Add item** at the end of the relevant category on the planner. The form opens over your current choices with a photo chooser, name field and **Add to library** button. The category is already chosen, so there is no category picker. Use **Crop photo** to adjust the photo before saving. **Cancel** or Escape closes the form without saving. A successful upload closes the form and adds the picture to that category, retaining the current plan selections. JPEG, PNG and WebP are supported; convert HEIC files first. Photos are resized to at most 1600 pixels before upload. The four-item limit applies to a journey; the item library may contain more than four pictures.
 
 Each library picture has left/right arrows to reorder it within its category. The order is saved on the server and used by every device in the library and journey picker. Edge arrows are disabled; new uploads and transferred pictures join the end of their category. Existing displayed plans keep their current order.
 
@@ -83,10 +81,6 @@ Tap the display five times within three seconds to return directly to the plan c
 Use tablet kiosk mode or Guided Access to prevent browser/OS navigation and disable sleep as needed. Fullscreen and keeping the screen awake depend on the browser. Keep the app in its own browser tab; ingress/sidebar embedding is not provided.
 
 After **Show the plan**, a splash screen explains how to unlock the display. Choose **Continue to the plan** to lock it, or **Back to choices** to keep editing. Tick **Don’t show this again** before continuing to skip the splash on future journeys in this browser on this device. The preference survives reloads and add-on updates; clearing browser site data resets it. Other devices keep their own preference.
-
-## Return link
-
-In Settings, enter the full main-screen address under **Back to main screen**. The return link appears in the navigation on parent screens after unlocking; there is no footer. When ready, add a link from the main tablet app to `http://HOME-ASSISTANT-IP:8099`. The return link does not modify the linked application.
 
 ## Updates
 

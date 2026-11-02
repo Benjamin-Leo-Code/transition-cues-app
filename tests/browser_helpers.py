@@ -43,3 +43,24 @@ def open_step(page, kind):
             key=['places','transport'][current]
             page.locator(f'[data-kind="{key}"][aria-pressed="true"]').click()
         current=int(page.locator('#planStep').get_attribute('data-step'))
+
+
+def open_add(page, kind):
+    base=page.url.split('#')[0].rstrip('/')
+    page.goto(base+'/#choose')
+    page.reload()
+    page.locator('#planStep').wait_for()
+    if kind!='places':
+        page.locator('[data-kind="places"]').first.click()
+    if kind in ['people','items']:
+        page.locator('[data-kind="transport"]').first.click()
+    page.locator(f'[data-add-kind="{kind}"]').click()
+    page.locator('#uploadDialog').wait_for(state='visible')
+    assert page.locator('#uploadForm input[name="kind"]').count()==0
+
+
+def open_library(page, kind):
+    base=page.url.split('#')[0].rstrip('/')
+    page.goto(base+'/#settings')
+    page.locator(f'[data-tab="{kind}"]').click()
+    page.locator('#library').wait_for()

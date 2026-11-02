@@ -21,12 +21,14 @@ class Store:
         self.path = self.directory / 'library.json'
         self.lock = threading.RLock()
         self.data = json.loads(self.path.read_text()) if self.path.exists() else {
-            'version': 1, 'places': [], 'transport': [], 'items': [], 'people': [], 'returnUrl': ''}
+            'version': 1, 'places': [], 'transport': [], 'items': [], 'people': []}
         # Existing libraries predate the optional bring-along category.
         self.data.setdefault('items', [])
         self.data.setdefault('people', [])
-        if 'pin' in self.data:
-            self.data.pop('pin')
+        obsolete = [key for key in ('pin', 'returnUrl') if key in self.data]
+        for key in obsolete:
+            self.data.pop(key)
+        if obsolete:
             self.save()
 
     def save(self):
@@ -36,7 +38,7 @@ class Store:
         temporary.replace(self.path)
 
     def public(self):
-        return {k: self.data[k] for k in ('places', 'transport', 'items', 'people', 'returnUrl')}
+        return {k: self.data[k] for k in ('places', 'transport', 'items', 'people')}
 
     def write_image(self, encoded):
         try:
@@ -219,13 +221,6 @@ class Handler(BaseHTTPRequestHandler):
                         entry['usageCount'] = entry.get('usageCount', 0) + 1
             store.save()
             self.reply(200, store.public())
-        elif path == '/api/settings':
-            url = body.get('returnUrl', '')
-            if not isinstance(url, str) or len(url) > 2000 or (url and (urlsplit(url).scheme not in ('http', 'https') or not urlsplit(url).netloc)):
-                raise ValueError('Enter a full http:// or https:// return address.')
-            store.data['returnUrl'] = url
-            store.save()
-            self.reply(200, {'ok': True})
         else:
             self.reply(404, {'error': 'Not found.'})
 

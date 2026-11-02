@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.29
+
+- Add a category-specific Add item tile at the end of each planner picture list, opening photo upload without category selection.
+- Make Settings a Manage photos page with glyph category tabs.
+- Remove the return-link setting, API and stored return address; the app is standalone.
+
 ## 1.0.28
 
 - Match the app background and web-app theme colour to the supplied swatch (#ded8ca).

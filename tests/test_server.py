@@ -104,15 +104,15 @@ class AppTests(unittest.TestCase):
 
     def test_lan_editing_and_cross_origin_protection(self):
         self.assertEqual(self.request('/api/items', {'kind':'places','name':'Home','image':PNG}, cookie='')[0], 201)
-        self.assertEqual(self.request('/api/settings', {'returnUrl':''}, origin='http://evil.example')[0], 403)
+        self.assertEqual(self.request('/api/items', {'kind':'places','name':'Blocked','image':PNG}, origin='http://evil.example')[0], 403)
 
     def test_upload_validation_and_path_traversal(self):
         for image in ('invalid', base64.b64encode(b'<svg onload="alert(1)"/>').decode()):
             self.assertEqual(self.request('/api/items', {'kind':'places','name':'Bad','image':image})[0], 400)
         self.assertEqual(self.request('/images/../../server.py')[0], 404)
         self.assertEqual(self.request('/%2e%2e/server.py')[0], 404)
-        self.assertEqual(self.request('/api/settings', {'returnUrl':'javascript:alert(1)'})[0], 400)
-        self.assertEqual(self.request('/api/settings', {'returnUrl':'http://homeassistant.local:8123/lovelace/0'})[0], 200)
+        self.assertEqual(self.request('/api/settings', {'returnUrl':'javascript:alert(1)'})[0], 404)
+        self.assertEqual(self.request('/api/settings', {'returnUrl':'http://homeassistant.local:8123/lovelace/0'})[0], 404)
 
     def test_obsolete_pin_endpoints_are_removed(self):
         for endpoint in ['setup', 'unlock', 'pin']:
@@ -132,7 +132,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(len(self.request('/api/state')[1]['items']), 4)
         self.assertEqual(self.request(items[0]['image'])[0], 200)
 
-    def test_older_library_keeps_photos_settings_and_removes_pin(self):
+    def test_older_library_keeps_photos_and_removes_obsolete_settings(self):
         place = self.add()
         path = Path(self.directory.name) / 'library.json'
         legacy = json.loads(path.read_text())
@@ -143,7 +143,9 @@ class AppTests(unittest.TestCase):
         upgraded = Store(self.directory.name)
         self.assertEqual(upgraded.public()['items'], [])
         self.assertEqual(upgraded.public()['places'], [place])
-        self.assertEqual(upgraded.public()['returnUrl'], legacy['returnUrl'])
+        self.assertNotIn('returnUrl', upgraded.public())
+        self.assertNotIn('returnUrl', upgraded.data)
+        self.assertNotIn('returnUrl', json.loads(path.read_text()))
         self.assertNotIn('pin', upgraded.data)
         self.assertNotIn('pin', json.loads(path.read_text()))
         upgraded.save()
