@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.40
+
+- Remove the Opening ReadySteady placeholder and handle Settings/plan links without loading a new document.
+- Label add-picture tiles and upload dialogs Add place, Add transport, Add person or Add item.
+
 ## 1.0.39
 
 - Give What is coming with us? its own final Items page.

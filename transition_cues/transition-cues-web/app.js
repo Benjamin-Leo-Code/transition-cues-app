@@ -27,6 +27,7 @@ function settingsHeader() {
   return `<div class="settings-segments category-segments" role="tablist" aria-label="Picture categories">${uploadCategories.map(([key,label,icon])=>`<button type="button" role="tab" id="categoryTab-${key}" aria-selected="${key===category}" aria-pressed="${key===category}" aria-controls="settingsPanel" tabindex="${key===category?'0':'-1'}" data-tab="${key}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span></button>`).join('')}</div>`;
 }
 const planKinds=['places','transport','people','items'];
+const addLabels={places:'Add place',transport:'Add transport',people:'Add person',items:'Add item'};
 const chosenLocations=()=>selected.locations||(selected.places?[selected.places]:[]);
 const chosenTransports=()=>selected.transports||(selected.transport?[selected.transport]:[]);
 function renderChoose(focusStep=false) {
@@ -54,7 +55,7 @@ function renderChoose(focusStep=false) {
       const active=entries.some(x=>x.id===item.id);
       return `<button class="picture ${kind==='people'?'person-picture':''} ${active?'selected':''}" data-kind="${kind}" data-id="${item.id}" aria-pressed="${active}"><img src="${esc(item.image)}" alt=""><span class="check" aria-hidden="true">${['places','transport'].includes(kind)&&active?entries.findIndex(x=>x.id===item.id)+1:'✓'}</span><span class="name">${esc(item.name)}</span></button>`;
     }
-    return `<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}<div class="grid other-choices">${other.map(picture).join('')}<button type="button" class="picture add-picture" data-add-kind="${kind}" aria-label="Add item to ${kind==='places'?'Places':kind==='transport'?'Transport':kind==='people'?'People':'Items'}"><span class="add-picture-symbol" aria-hidden="true">＋</span><span class="name">Add item</span></button></div></div>`;
+    return `<div data-choice-group="${kind}">${frequent.length?`<div class="grid frequent-choices" aria-label="Frequently used">${frequent.map(picture).join('')}</div>`:''}<div class="grid other-choices">${other.map(picture).join('')}<button type="button" class="picture add-picture" data-add-kind="${kind}" aria-label="${addLabels[kind]}"><span class="add-picture-symbol" aria-hidden="true">＋</span><span class="name">${addLabels[kind]}</span></button></div></div>`;
   }
   const title=['Where are we going?','How are we travelling?','Who is coming along?','What is coming with us?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep>=2?'<p class="optional-label">Optional</p>':''}</div></div>`;
@@ -120,7 +121,7 @@ function finishJourney() {
   state ??= {places:locked.locations||[locked.places],transport:locked.transports||[locked.transport],items:locked.items||[],people:locked.people||[]};
   locked=null;taps=[];planStep=0;
   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
-  location.hash='choose';renderChoose();
+  navigate('#choose');
 }
 function renderLocked() {
   document.body.classList.add('lock-active');
@@ -158,7 +159,7 @@ function renderManage() {
 function openUpload(kind) {
   const dialog=$('#uploadDialog');
   $('#uploadForm').reset();$('#uploadError').textContent='';$('#photoPreview').hidden=true;$('#cropUpload').hidden=true;$('#uploadButton').disabled=false;
-  $('#uploadTitle').textContent='Add item';$('#uploadButton').textContent='Add to library ＋';$('#uploadCancel').disabled=false;
+  $('#uploadTitle').textContent=addLabels[kind];$('#uploadButton').textContent='Add to library ＋';$('#uploadCancel').disabled=false;
   dialog.showModal();
   const uploadKind=()=>kind;
   let previewUrl, croppedImage = null, preparing = Promise.resolve(), revision = 0, saving = false;
@@ -307,7 +308,7 @@ function orderControl(item,direction,disabled) {
 }
 function renderLibrary() {
   const items=state[category];
-  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map((x,index)=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-order">${orderControl(x,'left',index===0)}${orderControl(x,'right',index===items.length-1)}</div><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Use Add item on the plan to add a picture to this category.</p></div>`;
+  $('#library').innerHTML=items.length ? `<div class="library-grid">${items.map((x,index)=>`<article class="library-item ${category==='people'?'person-picture':''}"><img src="${esc(x.image)}" alt=""><strong>${esc(x.name)}</strong><div class="library-order">${orderControl(x,'left',index===0)}${orderControl(x,'right',index===items.length-1)}</div><div class="library-actions">${libraryAction('crop',x,'Crop','Crop photo')}${libraryAction('rename',x,'Rename','Rename')}${libraryAction('transfer',x,'Change category for','Change category')}${libraryAction('remove',x,'Remove','Remove photo')}</div></article>`).join('')}</div>` : `<div class="empty"><h3>No ${category==='people'?'people':category==='items'?'items to bring along':category==='places'?'places':'transport pictures'} yet</h3><p>Use ${addLabels[category]} on the plan to add a picture to this category.</p></div>`;
   app.querySelectorAll('[data-order]').forEach(button=>button.onclick=async()=>{
     if(reorderBusy)return;
     const kind=category, id=button.dataset.order, direction=button.dataset.direction;
@@ -341,6 +342,18 @@ async function route() {
   const view=location.hash.slice(1) || (location.pathname==='/manage'?'manage':location.pathname==='/settings'?'settings':'choose');
   if(['settings','manage','settings-manage','settings-more'].includes(view))renderManage();else renderChoose();
 }
+function navigate(hash){
+  if(location.hash!==hash)history.pushState(null,'',hash);
+  route();
+}
+// Keep fragment navigation in this document, including standalone iOS web apps.
+app.addEventListener('click',event=>{
+  if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  const link=event.target.closest('a[href^="#"]');
+  if(!link||link.target||link.hasAttribute('download'))return;
+  event.preventDefault();navigate(link.getAttribute('href'));
+});
+window.addEventListener('popstate',()=>route());
 window.addEventListener('hashchange',()=>route());
 // Refresh the library when a parent returns to this tab; never replace a locked cue.
 document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&!locked){try{await refresh();if(!$('#uploadDialog').open&&!$('#deleteDialog').open&&!$('#editDialog').open&&!$('#cropDialog').open&&!$('#planDialog').open && !['INPUT','SELECT'].includes(document.activeElement.tagName))await route();}catch(error){toast(error.message);}}});

@@ -35,7 +35,9 @@ def run(engine):
                     assert brand['x']+brand['width']<=nav['x']+1
                     assert abs(nav['y']+nav['height']/2-brand['y']-brand['height']/2)<1
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                page.evaluate('window.__navigationMarker=12345')
                 page.get_by_role('link',name='Settings',exact=True).click()
+                assert page.evaluate('window.__navigationMarker')==12345
                 expect(page.get_by_role('heading',name='Manage photos',exact=True)).to_be_visible()
                 expect(page.locator('.settings-segments svg')).to_have_count(4)
                 expect(page.locator('#uploadForm')).not_to_be_visible()
@@ -47,6 +49,14 @@ def run(engine):
                 expect(page.get_by_role('tab',name='Places',exact=True)).to_be_focused()
                 page.screenshot(path='/tmp/readysteady-manage-photos.png',full_page=True)
                 page.get_by_role('link',name='Back to plan',exact=True).click()
+                assert page.evaluate('window.__navigationMarker')==12345
+                expect(page.locator('#planHeading')).to_have_text('Where are we going?')
+                page.go_back()
+                expect(page.get_by_role('heading',name='Manage photos',exact=True)).to_be_visible()
+                page.go_forward()
+                expect(page.locator('#planHeading')).to_have_text('Where are we going?')
+                assert page.evaluate('window.__navigationMarker')==12345
+
                 names=[['places',LONG],['places','Park'],['places','Stop C'],['places','Stop D'],['places','Stop E'],['places','Stop F'],['places','Stop G'],['transport','Bus'],['transport','Train'],['transport','Walking'],['people','A person with a much longer name'],['people','Person B']]+[['items',name] for name in ['Headphones with a very long name','Drink','Coat','Toy','Bag','Book']]
                 page.evaluate("""async names=>{for(const [kind,name] of names){const c=document.createElement('canvas');c.width=c.height=400;const x=c.getContext('2d');x.fillStyle={places:'#9caf88',transport:'#ddbd86',people:'#c5b5d3',items:'#a8c5d6'}[kind];x.fillRect(0,0,400,400);const r=await fetch('/api/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,name,image:c.toDataURL('image/png').split(',')[1]})});if(!r.ok)throw Error('Fixture upload failed')}}""",names)
                 page.reload()
@@ -102,6 +112,7 @@ def run(engine):
                     page.set_viewport_size({'width':width,'height':height})
                     for kind in ['places','transport','people','items']:
                         open_step(page,kind)
+                        expect(page.locator(f'[data-add-kind="{kind}"]')).to_have_text({'places':'＋Add place','transport':'＋Add transport','people':'＋Add person','items':'＋Add item'}[kind])
                         photos=page.locator(f'[data-kind="{kind}"] img').all()
                         captions=page.locator(f'[data-kind="{kind}"] .name').all()
                         assert abs(photos[0].bounding_box()['y']-photos[1].bounding_box()['y'])<1

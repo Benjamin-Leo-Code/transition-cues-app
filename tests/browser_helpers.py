@@ -59,8 +59,10 @@ def open_add(page, kind):
         page.locator('[data-kind="transport"]').first.click()
         page.locator('#nextStep').click()
     if kind=='items':page.locator('#nextStep').click()
-    page.locator(f'[data-add-kind="{kind}"]').click()
+    label={'places':'Add place','transport':'Add transport','people':'Add person','items':'Add item'}[kind]
+    page.get_by_role('button',name=label,exact=True).click()
     page.locator('#uploadDialog').wait_for(state='visible')
+    assert page.locator('#uploadTitle').inner_text()==label
     assert page.locator('#uploadForm input[name="kind"]').count()==0
 
 

@@ -30,7 +30,7 @@ The third page, **Who is coming along?**, is optional: select people or tap **Ne
 
 The grouped summary at the top replaces the logo and settings cog after the first location is selected. Each category wraps beneath its own glyph. Tap a thumbnail to edit that category or **Reset** to clear the plan. A scroll cue appears while more choices remain below; the floating action stays available while scrolling. The locked display shows locations as **To**, **Then** and transport as **By**, **Then**, followed by optional People and Items. Ordered selections survive reloads, including older single-location/transport plans. Tap five times within three seconds to finish.
 
-Open the app on your phone or tablet and tap **Add item** at the end of the relevant Places, Transport, People or Items list. Choose a photo, enter its name and tap **Add to library**. The category is set by the list you opened it from. Use **Crop photo** to adjust the square frame before uploading. The new picture appears in that list without changing your current plan selections.
+Open the app on your phone or tablet and tap **Add place**, **Add transport**, **Add person** or **Add item** at the end of the relevant Places, Transport, People or Items list. Choose a photo, enter its name and tap **Add to library**. The category is set by the list you opened it from. Use **Crop photo** to adjust the square frame before uploading. The new picture appears in that list without changing your current plan selections.
 
 The gear icon opens **Manage photos**. Its segmented control switches between Place, Transport, Items and People using their glyphs. Browse, crop, rename, transfer, reorder or remove pictures here. The app is standalone.
 
