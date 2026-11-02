@@ -18,9 +18,9 @@ async function refresh() { state = await api('state'); state.items ??= []; state
 const libraryIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>';
 const settingsIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><polygon points="20.00,12.00 21.81,13.95 21.24,15.83 18.65,16.44 17.66,17.66 17.56,20.31 15.83,21.24 13.56,19.85 12.00,20.00 10.05,21.81 8.17,21.24 7.56,18.65 6.34,17.66 3.69,17.56 2.76,15.83 4.15,13.56 4.00,12.00 2.19,10.05 2.76,8.17 5.35,7.56 6.34,6.34 6.44,3.69 8.17,2.76 10.44,4.15 12.00,4.00 13.95,2.19 15.83,2.76 16.44,5.35 17.66,6.34 20.31,6.44 21.24,8.17 19.85,10.44"/><circle cx="12" cy="12" r="3"/></svg>';
 const backIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
-function frame(content, route) {
+function frame(content, route, selectionHeader='') {
   document.body.classList.remove('lock-active');
-  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'':'subpage-header'}">${route==='choose'?'<a class="brand" href="#choose"><img src="/icons/icon-192.png?v=1.0.22" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':`<a class="back-plan header-back" href="#choose" aria-label="Back to plan" title="Back to plan">${backIcon}</a><h1 class="header-title">Settings</h1>`}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}</header>${content}</div>`;
+  app.innerHTML = `<div class="shell"><header class="header ${route==='choose'?'planner-header':'subpage-header'} ${selectionHeader?'selection-header':''}">${selectionHeader||`${route==='choose'?'<a class="brand" href="#choose"><img src="/icons/icon-192.png?v=1.0.22" alt=""><span>ReadySteady<small>Transition Cues</small></span></a>':`<a class="back-plan header-back" href="#choose" aria-label="Back to plan" title="Back to plan">${backIcon}</a><h1 class="header-title">Settings</h1>`}${route==='choose'?`<nav class="nav" aria-label="Main navigation">${[['settings','Settings',settingsIcon]].map(([r,t,icon])=>`<a class="icon-link" href="#${r}" aria-label="${t}" title="${t}" ${route===r?'aria-current="page"':''}>${icon}</a>`).join('')}</nav>`:''}${state.returnUrl ? `<a class="return-link" href="${esc(state.returnUrl)}">← Back to main screen</a>` : ''}`}</header>${content}</div>`;
 }
 function intro(title, description, extra='') { return `<div class="intro"><div><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>${extra}</div>`; }
 
@@ -64,7 +64,7 @@ function renderChoose(focusStep=false) {
   else if(!selected.transport){selected.items=[];selected.people=[];planStep=Math.min(planStep,1);}
   planStep=Math.min(planStep,2);
   const thumbnails=planKinds.flatMap((key,index)=>(Array.isArray(selected[key])?selected[key]:selected[key]?[selected[key]]:[]).map((item,itemIndex)=>`<span class="plan-selection"><span class="plan-category" aria-hidden="true">${itemIndex===0?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${uploadCategories.find(([kind])=>kind===key)[2]}</svg>`:''}</span><button type="button" class="plan-thumbnail ${key==='people'?'person-thumbnail':''}" data-edit-step="${Math.min(index,2)}" data-edit-kind="${key}" aria-label="Change ${key==='places'?'place':key==='items'?'item':key==='people'?'person':'transport'}: ${esc(item.name)}" title="${esc(item.name)}"><img src="${esc(item.image)}" alt=""></button></span>`)).join('');
-  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections">${planStep>0?`<button id="previousStep" type="button" class="step-back" aria-label="Previous selection" title="Previous selection">${backIcon}</button>`:''}<div class="plan-thumbnails">${thumbnails}</div></div>`:'';
+  const progress=selected.places?`<div class="plan-progress" aria-label="Your selections"><div class="plan-thumbnails">${thumbnails}</div><button type="button" id="resetPlan" class="reset-plan">Reset</button></div>`:'';
   function cards(kind) {
     const multi=kind==='people'||kind==='items';
     return state[kind].length?`<div class="grid" data-choice-group="${kind}">${state[kind].map(item=>{
@@ -76,7 +76,7 @@ function renderChoose(focusStep=false) {
   const title=['Where are we going?','How are we travelling','Who is coming along?'][planStep];
   const heading=`<div class="intro wizard-heading"><div><h1 id="planHeading" tabindex="-1">${title}</h1>${planStep===2?'<p class="optional-label">Optional</p>':''}</div></div>`;
   const choices=planStep===2?`${cards('people')}<section class="optional-items" aria-labelledby="itemsHeading"><div class="intro wizard-heading"><div><h2 id="itemsHeading" tabindex="-1">What is coming with us</h2><p class="optional-label">Optional</p><p class="items-guidance">Choose up to 4 items</p></div><small id="itemCount" role="status">${selected.items.length}/${MAX_BRING_ITEMS}</small></div>${cards('items')}</section>`:cards(planStep===0?'places':'transport');
-  frame(progress+`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose');
+  frame(`<section id="planStep" data-step="${planStep}" aria-labelledby="planHeading">${heading}${choices}</section><div class="journey-bar wizard-actions" ${selected.places?'':'hidden'}><button id="start" class="primary" ${selected.places&&selected.transport?'':'disabled'}>Show the plan <span aria-hidden="true">→</span></button></div>`,'choose',progress);
   if($('.plan-thumbnails'))$('.plan-thumbnails').scrollLeft=selectionScroll;
   app.querySelectorAll('[data-kind]').forEach(button=>button.onclick=()=>{
     const kind=button.dataset.kind, item=state[kind].find(x=>x.id===button.dataset.id);
@@ -87,7 +87,7 @@ function renderChoose(focusStep=false) {
       renderChoose();app.querySelector(`[data-kind="${kind}"][data-id="${item.id}"]`)?.focus({preventScroll:true});
     }else{selected[kind]=item;planStep++;renderChoose(true);}
   });
-  if($('#previousStep'))$('#previousStep').onclick=()=>{planStep--;renderChoose(true);};
+  if($('#resetPlan'))$('#resetPlan').onclick=()=>{selected={places:null,transport:null,items:[],people:[]};pendingJourney=null;planStep=0;renderChoose(true);};
   app.querySelectorAll('[data-edit-step]').forEach(button=>button.onclick=()=>{planStep=Number(button.dataset.editStep);const kind=button.dataset.editKind;renderChoose(true);if(kind==='items'){$('#itemsHeading').focus({preventScroll:true});$('#itemsHeading').scrollIntoView({block:'start'});}});
   $('#start').onclick=()=>{
     if(!selected.places||!selected.transport)return;

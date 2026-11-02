@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.25
+
+- Remove the planner header divider and tighten the space above questions.
+- Replace the logo and settings header with selected pictures after choosing a place.
+- Replace previous-question navigation with a Reset text control below the selected pictures.
+
 ## 1.0.24
 
 - Add category glyphs above the selected place, transport, first person and first item.

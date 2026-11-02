@@ -36,7 +36,7 @@ def open_step(page, kind):
     page.locator('#planStep').wait_for()
     current=int(page.locator('#planStep').get_attribute('data-step'))
     while current>target:
-        page.locator('#previousStep').click()
+        page.locator(f'[data-edit-step="{target}"]').first.click()
         current=int(page.locator('#planStep').get_attribute('data-step'))
     while current<target:
         if current<2:
